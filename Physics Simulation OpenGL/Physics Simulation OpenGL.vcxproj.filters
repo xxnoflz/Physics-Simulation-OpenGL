@@ -1,0 +1,131 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\Physics Simulation">
+      <UniqueIdentifier>{14c7f271-000a-44c5-9a47-6cfdebc80b8b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Vendor">
+      <UniqueIdentifier>{e4349b67-3e81-4186-a036-fc8b919190e7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Physics Simulation\Utilities">
+      <UniqueIdentifier>{9614cc38-db71-4215-95e1-14aad28ebf87}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Physics Simulation\Render">
+      <UniqueIdentifier>{e00a265d-0265-4631-923b-9987c12ecc31}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Physics Simulation\Shaders">
+      <UniqueIdentifier>{869976f0-e321-4912-953c-43b71c12781a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Physics Simulation\Model Parser">
+      <UniqueIdentifier>{3440f490-a5bb-4b38-98b3-93896e831afc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Physics Simulation\Objects">
+      <UniqueIdentifier>{895d051f-0580-4a45-9fb5-73fc49578b65}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Physics Simulation\Solvers">
+      <UniqueIdentifier>{41907a07-2c71-4e00-bfdd-5ee5a62ed862}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Source\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Physics Simulation\physics_simulation.cpp">
+      <Filter>Source Files\Physics Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Physics Simulation\Vendor\glad.c">
+      <Filter>Source Files\Vendor</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Physics Simulation\Utilities\shader.cpp">
+      <Filter>Source Files\Physics Simulation\Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Physics Simulation\Utilities\resource_manager.cpp">
+      <Filter>Source Files\Physics Simulation\Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Physics Simulation\Render\renderer.cpp">
+      <Filter>Source Files\Physics Simulation\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Physics Simulation\Model Parser\ModelParser.cpp">
+      <Filter>Source Files\Physics Simulation\Model Parser</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Physics Simulation\Utilities\model.cpp">
+      <Filter>Source Files\Physics Simulation\Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Physics Simulation\Objects\basic_object.cpp">
+      <Filter>Source Files\Physics Simulation\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Physics Simulation\Objects\camera_object.cpp">
+      <Filter>Source Files\Physics Simulation\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Physics Simulation\Objects\spectator_object.cpp">
+      <Filter>Source Files\Physics Simulation\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Physics Simulation\Objects\physics_object.cpp">
+      <Filter>Source Files\Physics Simulation\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Physics Simulation\Solvers\physics_solver.cpp">
+      <Filter>Source Files\Physics Simulation\Solvers</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Physics Simulation\Solvers\collision_solver.cpp">
+      <Filter>Source Files\Physics Simulation\Solvers</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Source\Physics Simulation\physics_simulation.h">
+      <Filter>Source Files\Physics Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Physics Simulation\Utilities\shader.h">
+      <Filter>Source Files\Physics Simulation\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Physics Simulation\Utilities\resource_manager.h">
+      <Filter>Source Files\Physics Simulation\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Physics Simulation\Render\renderer.h">
+      <Filter>Source Files\Physics Simulation\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Physics Simulation\Model Parser\ModelParser.h">
+      <Filter>Source Files\Physics Simulation\Model Parser</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Physics Simulation\Utilities\model.h">
+      <Filter>Source Files\Physics Simulation\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Physics Simulation\Objects\basic_object.h">
+      <Filter>Source Files\Physics Simulation\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Physics Simulation\Objects\camera_object.h">
+      <Filter>Source Files\Physics Simulation\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Physics Simulation\Objects\spectator_object.h">
+      <Filter>Source Files\Physics Simulation\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Physics Simulation\Objects\physics_object.h">
+      <Filter>Source Files\Physics Simulation\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Physics Simulation\Solvers\physics_solver.h">
+      <Filter>Source Files\Physics Simulation\Solvers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Physics Simulation\Solvers\collision_solver.h">
+      <Filter>Source Files\Physics Simulation\Solvers</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Source\Physics Simulation\Shaders\basic_vertex.glsl">
+      <Filter>Source Files\Physics Simulation\Shaders</Filter>
+    </None>
+    <None Include="Source\Physics Simulation\Shaders\basic_fragment.glsl">
+      <Filter>Source Files\Physics Simulation\Shaders</Filter>
+    </None>
+  </ItemGroup>
+</Project>
