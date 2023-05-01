@@ -85,7 +85,7 @@ void Simulation::PhysicsSimulation::InitOpenGL() {
 void Simulation::PhysicsSimulation::Update() {
 	UpdateTime();
 	KeyboardInput();
-	Solvers::PhysicsSolver::Update(m_objects, 0.016f); //?
+	Solvers::PhysicsSolver::Update(m_objects, m_time.deltaTime);
 }
 
 void Simulation::PhysicsSimulation::UpdateTime() {
