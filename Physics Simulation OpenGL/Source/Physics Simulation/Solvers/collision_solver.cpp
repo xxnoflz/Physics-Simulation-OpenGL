@@ -1,6 +1,13 @@
 #include "collision_solver.h"
 
 //Collision Detection
+bool Solvers::CollisionSolver::CheckCollisionAABB(const Utilities::AABB& first, const Utilities::AABB& second) {
+	bool xCoord{ first.GetUpperBound().x >= second.GetLowerBound().x && second.GetUpperBound().x >= first.GetLowerBound().x };
+	bool yCoord{ first.GetUpperBound().y >= second.GetLowerBound().y && second.GetUpperBound().y >= first.GetLowerBound().y };
+	bool zCoord{ first.GetUpperBound().z >= second.GetLowerBound().z && second.GetUpperBound().z >= first.GetLowerBound().z };
+	return xCoord && yCoord && zCoord;
+}
+
 std::tuple<bool, Solvers::CollisionSolver::CollisionData> Solvers::CollisionSolver::CheckCollision(Objects::PhysicsObject* first, Objects::PhysicsObject* second) {
 	const std::vector<glm::vec3> firstPoints{ GetObjectWorldPoints(first) };
 	const std::vector<glm::vec3> secondPoints{ GetObjectWorldPoints(second) };
@@ -209,12 +216,12 @@ void Solvers::CollisionSolver::ResolveCollision(CollisionData collision_data,
 	float deltaTime) 
 {
 	float totalInverseMass{ (1.0f / collision_data.manifold.firstObject->GetMass()) + (1.0f / collision_data.manifold.secondObject->GetMass()) };
-	float firstLeftTime{
-		glm::clamp(deltaTime - (glm::length(collision_data.manifold.firstObject->GetLastPos() - collision_data.manifold.firstObject->GetPosition()) / glm::length(collision_data.manifold.firstObject->GetLinearVelocity())), 0.0f, std::numeric_limits<float>::infinity())
-	};
-	float secondLeftTime{
-		glm::clamp(deltaTime - (glm::length(collision_data.manifold.secondObject->GetLastPos() - collision_data.manifold.secondObject->GetPosition()) / glm::length(collision_data.manifold.secondObject->GetLinearVelocity())), 0.0f, std::numeric_limits<float>::infinity())
-	};
+	//float firstLeftTime{
+	//	glm::clamp(deltaTime - (glm::length(collision_data.manifold.firstObject->GetLastPos() - collision_data.manifold.firstObject->GetPosition()) / glm::length(collision_data.manifold.firstObject->GetLinearVelocity())), 0.0f, std::numeric_limits<float>::infinity())
+	//};
+	//float secondLeftTime{
+	//	glm::clamp(deltaTime - (glm::length(collision_data.manifold.secondObject->GetLastPos() - collision_data.manifold.secondObject->GetPosition()) / glm::length(collision_data.manifold.secondObject->GetLinearVelocity())), 0.0f, std::numeric_limits<float>::infinity())
+	//};
 
 	for (uint32_t currentManifold{}; currentManifold < collision_data.manifold.vertices.size(); ++currentManifold) {
 		SolveNormalImpulse(collision_data.manifold.firstObject, collision_data.manifold.secondObject, collision_data, currentManifold, deltaTime, totalInverseMass, accumulatedImpulses);

@@ -8,6 +8,7 @@
 #include <glm/gtx/inertia.hpp>
 
 #include "../Utilities/resource_manager.h"
+#include "../Utilities/aabb.h"
 #include "../Render/renderer.h"
 
 #include "basic_object.h"
@@ -19,6 +20,7 @@ namespace Objects {
 		PhysicsObject(const glm::vec3& position, const glm::vec3& size, bool isKinematic, float mass, glm::vec3 start_linear_velocity, std::string_view model_name);
 
 		void UpdateMatrix();
+		void UpdateAABB();
 		void Draw(Render::Renderer* render);
 
 		const glm::vec3& GetLinearVelocity() const;
@@ -31,6 +33,8 @@ namespace Objects {
 
 		const std::vector<glm::vec4>& GetVertices() const;
 		const std::vector<glm::vec3>& GetNormals() const;
+		const std::vector<glm::vec4> GetWorldVertices() const;
+		const Utilities::AABB GetAABB() const;
 		const glm::mat4& GetMatrix() const;
 		const float GetMass() const;
 		const glm::mat3& GetTensor();
@@ -52,6 +56,7 @@ namespace Objects {
 		std::string m_model_name;
 		glm::mat4 m_model_matrix;
 
+		Utilities::AABB m_aabb;
 		glm::vec3 m_lastPos;
 	};
 

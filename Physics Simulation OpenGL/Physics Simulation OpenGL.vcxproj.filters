@@ -81,6 +81,12 @@
     <ClCompile Include="Source\Physics Simulation\Solvers\collision_solver.cpp">
       <Filter>Source Files\Physics Simulation\Solvers</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Physics Simulation\Utilities\aabb.cpp">
+      <Filter>Source Files\Physics Simulation\Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Physics Simulation\Utilities\aabb_tree.cpp">
+      <Filter>Source Files\Physics Simulation\Utilities</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Physics Simulation\physics_simulation.h">
@@ -118,6 +124,12 @@
     </ClInclude>
     <ClInclude Include="Source\Physics Simulation\Solvers\collision_solver.h">
       <Filter>Source Files\Physics Simulation\Solvers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Physics Simulation\Utilities\aabb.h">
+      <Filter>Source Files\Physics Simulation\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Physics Simulation\Utilities\aabb_tree.h">
+      <Filter>Source Files\Physics Simulation\Utilities</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

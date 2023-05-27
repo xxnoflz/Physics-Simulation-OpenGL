@@ -2,8 +2,10 @@
 #include <glm/glm.hpp>
 
 #include <vector>
+#include <stack>
 
 #include "../Objects/physics_object.h"
+#include "../Utilities/aabb_tree.h"
 #include "collision_solver.h"
 
 namespace Solvers {
@@ -18,11 +20,12 @@ namespace Solvers {
 			std::vector<float> accumulatedFrictions;
 		};
 	public:
-		static void Update(std::vector<Objects::PhysicsObject*> objects, float deltaTime);
+		static void Update(std::vector<Objects::PhysicsObject*>& objects, Utilities::AABB_Tree& tree, float deltaTime);
 	private:
-		static void ApplyGravity(std::vector<Objects::PhysicsObject*> objects);
-		static void UpdatePositions(std::vector<Objects::PhysicsObject*> objects, float deltaTime);
-		static void SolveCollisions(std::vector<Objects::PhysicsObject*> objects, float deltaTime);
+		static void UpdateAABB(std::vector<Objects::PhysicsObject*>& objects);
+		static void ApplyGravity(std::vector<Objects::PhysicsObject*>& objects);
+		static void UpdatePositions(std::vector<Objects::PhysicsObject*>& objects, float deltaTime);
+		static void SolveCollisions(std::vector<Objects::PhysicsObject*>& objects, Utilities::AABB_Tree& tree, float deltaTime);
 	};
 
 }

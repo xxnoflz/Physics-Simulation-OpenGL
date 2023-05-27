@@ -12,6 +12,7 @@
 #include "Utilities/resource_manager.h"
 #include "Render/renderer.h"
 #include "Objects/physics_object.h"
+#include "Utilities/aabb_tree.h"
 #include "Objects/spectator_object.h"
 #include "Solvers/physics_solver.h"
 
@@ -45,6 +46,8 @@ namespace Simulation {
 
 		std::vector<Objects::PhysicsObject*> m_objects;
 		Objects::SpectatorObject m_spectator;
+
+		Utilities::AABB_Tree m_tree;
 
 		void Init();
 		void InitOpenGL();

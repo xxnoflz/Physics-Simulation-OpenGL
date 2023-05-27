@@ -149,6 +149,8 @@
     <ClCompile Include="Source\Physics Simulation\Render\renderer.cpp" />
     <ClCompile Include="Source\Physics Simulation\Solvers\collision_solver.cpp" />
     <ClCompile Include="Source\Physics Simulation\Solvers\physics_solver.cpp" />
+    <ClCompile Include="Source\Physics Simulation\Utilities\aabb.cpp" />
+    <ClCompile Include="Source\Physics Simulation\Utilities\aabb_tree.cpp" />
     <ClCompile Include="Source\Physics Simulation\Utilities\model.cpp" />
     <ClCompile Include="Source\Physics Simulation\Utilities\resource_manager.cpp" />
     <ClCompile Include="Source\Physics Simulation\Utilities\shader.cpp" />
@@ -164,6 +166,8 @@
     <ClInclude Include="Source\Physics Simulation\Render\renderer.h" />
     <ClInclude Include="Source\Physics Simulation\Solvers\collision_solver.h" />
     <ClInclude Include="Source\Physics Simulation\Solvers\physics_solver.h" />
+    <ClInclude Include="Source\Physics Simulation\Utilities\aabb.h" />
+    <ClInclude Include="Source\Physics Simulation\Utilities\aabb_tree.h" />
     <ClInclude Include="Source\Physics Simulation\Utilities\model.h" />
     <ClInclude Include="Source\Physics Simulation\Utilities\resource_manager.h" />
     <ClInclude Include="Source\Physics Simulation\Utilities\shader.h" />

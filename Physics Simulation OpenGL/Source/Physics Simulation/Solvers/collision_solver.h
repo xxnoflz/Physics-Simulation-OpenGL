@@ -9,6 +9,7 @@
 #include "../Utilities/resource_manager.h"
 #include "../Utilities/model.h"
 #include "../Objects/physics_object.h"
+#include "../Utilities/aabb.h"
 
 namespace Solvers {
 
@@ -34,6 +35,7 @@ namespace Solvers {
 			Manifold manifold;
 		};
 
+		static bool CheckCollisionAABB(const Utilities::AABB& first, const Utilities::AABB& second);
 		static std::tuple<bool, CollisionData> CheckCollision(Objects::PhysicsObject* first, Objects::PhysicsObject* second);
 		static void ResolveCollision(CollisionData collision_data, std::vector<float>& accumulatedImpulses, std::vector<float>& accumulatedFrictions, float deltaTime);
 	private:

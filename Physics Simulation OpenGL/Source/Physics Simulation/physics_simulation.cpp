@@ -3,7 +3,7 @@
 Simulation::PhysicsSimulation::PhysicsSimulation(const uint32_t window_width, const uint32_t window_height) :
 	m_window(), m_window_width(window_width), m_window_height(window_height),
 	m_spectator(spectator_start_position), m_time(), m_objects(),
-	m_hasSpawned(false)
+	m_hasSpawned(false), m_tree()
 {
 	Init();
 }
@@ -28,10 +28,12 @@ void Simulation::PhysicsSimulation::KeyboardInput() {
 	if (glfwGetKey(m_window, GLFW_KEY_E) == GLFW_PRESS && !m_hasSpawned) {
 		m_objects.push_back(new Objects::PhysicsObject(m_spectator.GetPosition() + (m_spectator.GetDirection() * 3.0f), glm::vec3(1.0f), true, 20.0f, m_spectator.GetDirection() * 7.5f, "cube_model"));
 		m_hasSpawned = true;
+		m_tree.InsertLeaf(m_objects.back());
 	}
 	else if (glfwGetKey(m_window, GLFW_KEY_Q) == GLFW_PRESS && !m_hasSpawned) {
 		m_objects.push_back(new Objects::PhysicsObject(m_spectator.GetPosition() + (m_spectator.GetDirection() * 3.0f), glm::vec3(10.0f, 0.5f, 10.0f), false, 1000.0f, glm::vec3(0.0f), "cube_model"));
 		m_hasSpawned = true;
+		m_tree.InsertLeaf(m_objects.back());
 	}
 	else if (glfwGetKey(m_window, GLFW_KEY_E) == GLFW_RELEASE && glfwGetKey(m_window, GLFW_KEY_Q) == GLFW_RELEASE)
 		m_hasSpawned = false;
@@ -85,7 +87,7 @@ void Simulation::PhysicsSimulation::InitOpenGL() {
 void Simulation::PhysicsSimulation::Update() {
 	UpdateTime();
 	KeyboardInput();
-	Solvers::PhysicsSolver::Update(m_objects, m_time.deltaTime);
+	Solvers::PhysicsSolver::Update(m_objects, m_tree, 0.016f);
 }
 
 void Simulation::PhysicsSimulation::UpdateTime() {
