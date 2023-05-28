@@ -46,19 +46,19 @@ void Solvers::PhysicsSolver::SolveCollisions(std::vector<std::unique_ptr<Objects
 
 	//Dynamic AABB Tree
 	for (const auto& object : objects) {
-		std::stack<std::shared_ptr<Utilities::AABB_Tree::Node>> currentStack{};
+		std::stack<std::weak_ptr<Utilities::AABB_Tree::Node>> currentStack{};
 		currentStack.push(tree.GetRoot());
 
 		while (!currentStack.empty()) {
-			std::shared_ptr<Utilities::AABB_Tree::Node> currentNode{ currentStack.top() };
+			std::weak_ptr<Utilities::AABB_Tree::Node> currentNode{ currentStack.top() };
 			currentStack.pop();
 
-			if (currentNode->object == object.get())
+			if (currentNode.lock()->object == object.get())
 				continue;
 
-			if (currentNode->isLeaf) {
+			if (currentNode.lock()->isLeaf) {
 				Objects::PhysicsObject* first{ object.get() };
-				Objects::PhysicsObject* second{ currentNode->object };
+				Objects::PhysicsObject* second{ currentNode.lock()->object };
 
 				if (first->GetID() > second->GetID())
 					continue;
@@ -76,9 +76,9 @@ void Solvers::PhysicsSolver::SolveCollisions(std::vector<std::unique_ptr<Objects
 					currentCollisions.push_back(data);
 				}
 			}
-			else if (Solvers::CollisionSolver::CheckCollisionAABB(object->GetAABB(), currentNode->box)) {
-				currentStack.push(currentNode->firstChild);
-				currentStack.push(currentNode->secondChild);
+			else if (Solvers::CollisionSolver::CheckCollisionAABB(object->GetAABB(), currentNode.lock().get()->box)) {
+				currentStack.push(currentNode.lock()->firstChild);
+				currentStack.push(currentNode.lock()->secondChild);
 			}
 		}
 	}

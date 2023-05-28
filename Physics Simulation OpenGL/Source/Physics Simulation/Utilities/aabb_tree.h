@@ -14,10 +14,10 @@ namespace Utilities {
 			AABB box;
 
 			Objects::PhysicsObject* object;
-			std::shared_ptr<Node> parent;
+			std::weak_ptr<Node> parent;
 
-			std::shared_ptr<Node> firstChild;
-			std::shared_ptr<Node> secondChild;
+			std::weak_ptr<Node> firstChild;
+			std::weak_ptr<Node> secondChild;
 
 			bool isLeaf;
 		};
@@ -29,16 +29,16 @@ namespace Utilities {
 		void InsertLeaf(Objects::PhysicsObject* object);
 		void RemoveLeaf(Objects::PhysicsObject* object);
 
-		const std::shared_ptr<Node> GetRoot() const;
+		const std::weak_ptr<Node> GetRoot() const;
 		const std::vector<std::shared_ptr<Node>>& GetNodes() const;
 	private:
 		std::vector<std::shared_ptr<Node>> m_nodes;
-		std::shared_ptr<Node> m_root;
+		std::weak_ptr<Node> m_root;
 
-		std::shared_ptr<Node> AllocateLeafNode(Objects::PhysicsObject* object);
-		std::shared_ptr<Node> AllocateInternalNode();
+		std::weak_ptr<Node> AllocateLeafNode(Objects::PhysicsObject* object);
+		std::weak_ptr<Node> AllocateInternalNode();
 		float ComputeCost();
-		std::shared_ptr<Node> PickBest(std::shared_ptr<Node> leaf);
+		std::weak_ptr<Node> PickBest(std::weak_ptr<Node> leaf);
 	};
 
 }
