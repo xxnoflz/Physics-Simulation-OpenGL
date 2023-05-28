@@ -121,7 +121,8 @@ float Utilities::AABB_Tree::ComputeCost() {
 std::weak_ptr<Utilities::AABB_Tree::Node> Utilities::AABB_Tree::PickBest(std::weak_ptr<Utilities::AABB_Tree::Node> leaf) {
 	float bestCost{ std::numeric_limits<float>::max() };
 	std::weak_ptr<Node> bestSibling{ };
-
+	
+	//Bruteforce
 	for (const auto& node : m_nodes) {
 		if (node == leaf.lock())
 			continue;
@@ -142,6 +143,46 @@ std::weak_ptr<Utilities::AABB_Tree::Node> Utilities::AABB_Tree::PickBest(std::we
 			bestSibling = node;
 		}
 	}
+
+	//Branch and Bound Algorithm
+	//m_root.lock()->inheritanceCost = 0.0f;
+
+	//std::stack<std::weak_ptr<Node>> stack{};
+	//stack.push(m_root);
+
+	//while (!stack.empty()) {
+	//	std::weak_ptr<Node> candidate{ stack.top() };
+	//	stack.pop();
+
+	//	float inheritanceCost{ candidate.lock()->inheritanceCost };
+	//	if (inheritanceCost + leaf.lock()->box.GetArea() > bestCost)
+	//		break;
+
+	//	AABB combined{ AABB::Union(candidate.lock()->box, leaf.lock()->box) };
+	//	float directCost{ combined.GetArea() };
+	//	float totalCost{ inheritanceCost + directCost };
+
+	//	if (totalCost <= bestCost) {
+	//		bestCost = totalCost;
+	//		bestSibling = candidate;
+	//	}
+
+	//	if (candidate.lock()->isLeaf)
+	//		continue;
+
+	//	inheritanceCost += directCost - leaf.lock()->box.GetArea();
+	//	float lowerBoundCost{ inheritanceCost + leaf.lock()->box.GetArea() };
+
+	//	if (lowerBoundCost <= bestCost) {
+	//		std::weak_ptr<Node> nextFirst{ candidate.lock()->firstChild };
+	//		nextFirst.lock()->inheritanceCost = inheritanceCost;
+	//		stack.push(nextFirst);
+
+	//		std::weak_ptr<Node> nextSecond{ candidate.lock()->secondChild };
+	//		nextSecond.lock()->inheritanceCost = inheritanceCost;
+	//		stack.push(nextSecond);
+	//	}
+	//}
 
 	return bestSibling;
 }

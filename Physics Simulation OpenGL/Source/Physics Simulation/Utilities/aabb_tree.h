@@ -2,6 +2,7 @@
 #include <vector>
 #include <algorithm>
 #include <memory>
+#include <stack>
 
 #include "../Objects/physics_object.h"
 #include "aabb.h"
@@ -22,6 +23,7 @@ namespace Utilities {
 			std::weak_ptr<Node> secondChild;
 
 			bool isLeaf;
+			float inheritanceCost;
 		};
 
 		AABB_Tree();
