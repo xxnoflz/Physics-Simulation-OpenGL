@@ -26,7 +26,8 @@ void Solvers::PhysicsSolver::UpdatePositions(std::vector<std::unique_ptr<Objects
 
 void Solvers::PhysicsSolver::SolveCollisions(std::vector<std::unique_ptr<Objects::PhysicsObject>>& objects, Utilities::AABB_Tree& tree, float deltaTime) {
 	std::vector<CollisionResponseData> currentCollisions{};
-	std::vector <std::pair<Objects::PhysicsObject*, Objects::PhysicsObject*>> processedCollisions{};
+
+	//Bruteforce 
 	//for (uint32_t iterator_in{}; iterator_in < objects.size(); ++iterator_in) {
 	//	for (uint32_t iterator_out{ iterator_in + 1 }; iterator_out < objects.size(); ++iterator_out) {
 	//		std::tuple<bool, Solvers::CollisionSolver::CollisionData> result{ Solvers::CollisionSolver::CheckCollision(objects[iterator_in].get(), objects[iterator_out].get()) };
@@ -42,6 +43,8 @@ void Solvers::PhysicsSolver::SolveCollisions(std::vector<std::unique_ptr<Objects
 	//		}
 	//	}
 	//}
+
+	//Dynamic AABB Tree
 	for (const auto& object : objects) {
 		std::stack<std::shared_ptr<Utilities::AABB_Tree::Node>> currentStack{};
 		currentStack.push(tree.GetRoot());
@@ -54,13 +57,10 @@ void Solvers::PhysicsSolver::SolveCollisions(std::vector<std::unique_ptr<Objects
 				continue;
 
 			if (currentNode->isLeaf) {
-				Objects::PhysicsObject* first{object.get()};
-				Objects::PhysicsObject* second{currentNode->object};
+				Objects::PhysicsObject* first{ object.get() };
+				Objects::PhysicsObject* second{ currentNode->object };
 
 				if (first->GetID() > second->GetID())
-					std::swap(first, second);
-
-				if (std::find(processedCollisions.begin(), processedCollisions.end(), std::pair{ first, second }) != processedCollisions.end())
 					continue;
 
 				std::tuple<bool, Solvers::CollisionSolver::CollisionData> result{ Solvers::CollisionSolver::CheckCollision(first, second) };
@@ -73,7 +73,6 @@ void Solvers::PhysicsSolver::SolveCollisions(std::vector<std::unique_ptr<Objects
 						.accumulatedFrictions = std::vector<float>(collisionDetecionData.manifold.vertices.size())
 					};
 					
-					processedCollisions.push_back({ first, second });
 					currentCollisions.push_back(data);
 				}
 			}
