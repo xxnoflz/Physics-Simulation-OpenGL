@@ -8,6 +8,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <vector>
+#include <memory>
 
 #include "Utilities/resource_manager.h"
 #include "Render/renderer.h"
@@ -44,7 +45,7 @@ namespace Simulation {
 		TimeHandler m_time;
 		bool m_hasSpawned;
 
-		std::vector<Objects::PhysicsObject*> m_objects;
+		std::vector<std::unique_ptr<Objects::PhysicsObject>> m_objects;
 		Objects::SpectatorObject m_spectator;
 
 		Utilities::AABB_Tree m_tree;

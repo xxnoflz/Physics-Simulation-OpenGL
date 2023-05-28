@@ -2,25 +2,25 @@
 
 Utilities::AABB_Tree::AABB_Tree() : m_nodes(), m_root() {}
 
-void Utilities::AABB_Tree::Update(std::vector<Objects::PhysicsObject*>& objects) {
+void Utilities::AABB_Tree::Update(std::vector<std::unique_ptr<Objects::PhysicsObject>>& objects) {
 	for (const auto& object : objects) 
 		if (object->isKinematic()) {
-			RemoveLeaf(object);
-			InsertLeaf(object);
+			RemoveLeaf(object.get());
+			InsertLeaf(object.get());
 		}
 }
 
 void Utilities::AABB_Tree::InsertLeaf(Objects::PhysicsObject* object) {
-	Node* newLeaf{ AllocateLeafNode(object) };
+	std::shared_ptr<Node> newLeaf{ AllocateLeafNode(object) };
 	if (m_nodes.size() == 1) {
 		m_root = newLeaf;
 		return;
 	}
 
-	Node* bestSibling{ PickBest(newLeaf) };
+	std::shared_ptr<Node> bestSibling{ PickBest(newLeaf) };
 
-	Node* oldParent{ bestSibling->parent };
-	Node* newParent{ AllocateInternalNode() };
+	std::shared_ptr<Node> oldParent{ bestSibling->parent };
+	std::shared_ptr<Node> newParent{ AllocateInternalNode() };
 
 	newParent->parent = oldParent;
 	newParent->box = AABB::Union(newLeaf->box, bestSibling->box);
@@ -46,7 +46,7 @@ void Utilities::AABB_Tree::InsertLeaf(Objects::PhysicsObject* object) {
 		m_root = newParent;
 	}
 
-	Node* nodeIterator{ newLeaf->parent };
+	std::shared_ptr<Node> nodeIterator{ newLeaf->parent };
 	while (nodeIterator != nullptr) {
 		nodeIterator->box = AABB::Union(nodeIterator->firstChild->box, nodeIterator->secondChild->box);
 		nodeIterator = nodeIterator->parent;
@@ -54,7 +54,7 @@ void Utilities::AABB_Tree::InsertLeaf(Objects::PhysicsObject* object) {
 }
 
 void Utilities::AABB_Tree::RemoveLeaf(Objects::PhysicsObject* object) {
-	Node* nodeToDelete{};
+	std::shared_ptr<Node> nodeToDelete{};
 	for (const auto& node : m_nodes)
 		if (node->object == object) {
 			nodeToDelete = node;
@@ -65,9 +65,9 @@ void Utilities::AABB_Tree::RemoveLeaf(Objects::PhysicsObject* object) {
 	if (nodeToDelete == nullptr)
 		return;
 
-	Node* parent{ nodeToDelete->parent };
-	Node* grandParent{ parent->parent };
-	Node* sibling{ (parent->firstChild == nodeToDelete) ? parent->secondChild : parent->firstChild };
+	std::shared_ptr<Node> parent{ nodeToDelete->parent };
+	std::shared_ptr<Node> grandParent{ parent->parent };
+	std::shared_ptr<Node> sibling{ (parent->firstChild == nodeToDelete) ? parent->secondChild : parent->firstChild };
 
 	if (nodeToDelete == m_root) {
 		m_root = nullptr;
@@ -94,26 +94,25 @@ void Utilities::AABB_Tree::RemoveLeaf(Objects::PhysicsObject* object) {
 	}
 
 	m_nodes.erase(std::remove(m_nodes.begin(), m_nodes.end(), nodeToDelete), m_nodes.end());
-	delete nodeToDelete;
+	nodeToDelete.reset();
 }
 
-Utilities::AABB_Tree::Node* Utilities::AABB_Tree::AllocateLeafNode(Objects::PhysicsObject* object) {
-	Node* node{ new Node() };
+std::shared_ptr<Utilities::AABB_Tree::Node> Utilities::AABB_Tree::AllocateLeafNode(Objects::PhysicsObject* object) {
+	m_nodes.push_back(std::make_shared<Node>());
 
-	node->box = object->GetAABB();
-	node->object = object;
-	node->isLeaf = true;
-	m_nodes.push_back(node);
+	m_nodes.back()->box = object->GetAABB();
+	m_nodes.back()->object = object;
+	m_nodes.back()->isLeaf = true;
 
-	return node;
+	return m_nodes.back();
 }
 
-Utilities::AABB_Tree::Node* Utilities::AABB_Tree::AllocateInternalNode() {
-	Node* node{ new Node() };
-	node->isLeaf = false;
-	m_nodes.push_back(node);
+std::shared_ptr<Utilities::AABB_Tree::Node> Utilities::AABB_Tree::AllocateInternalNode() {
+	m_nodes.push_back(std::make_shared<Node>());
 
-	return node;
+	m_nodes.back()->isLeaf = false;
+
+	return m_nodes.back();
 }
 
 float Utilities::AABB_Tree::ComputeCost() {
@@ -125,9 +124,9 @@ float Utilities::AABB_Tree::ComputeCost() {
 	return cost;
 }
 
-Utilities::AABB_Tree::Node* Utilities::AABB_Tree::PickBest(Node* leaf) {
+std::shared_ptr<Utilities::AABB_Tree::Node> Utilities::AABB_Tree::PickBest(std::shared_ptr<Utilities::AABB_Tree::Node> leaf) {
 	float bestCost{ std::numeric_limits<float>::max() };
-	Node* bestSibling{ nullptr };
+	std::shared_ptr<Node> bestSibling{ nullptr };
 
 	for (const auto& node : m_nodes) {
 		if (node == leaf)
@@ -136,7 +135,7 @@ Utilities::AABB_Tree::Node* Utilities::AABB_Tree::PickBest(Node* leaf) {
 		AABB united{ AABB::Union(leaf->box, node->box) };
 
 		float cost{ united.GetArea() };
-		Node* parent{ node->parent };
+		std::shared_ptr<Node> parent{ node->parent };
 
 		while (parent != nullptr) {
 			AABB parentUnited{ AABB::Union(leaf->box, parent->box) };
@@ -153,10 +152,10 @@ Utilities::AABB_Tree::Node* Utilities::AABB_Tree::PickBest(Node* leaf) {
 	return bestSibling;
 }
 
-const Utilities::AABB_Tree::Node* Utilities::AABB_Tree::GetRoot() const {
+const std::shared_ptr<Utilities::AABB_Tree::Node> Utilities::AABB_Tree::GetRoot() const {
 	return m_root;
 }
 
-const std::vector<Utilities::AABB_Tree::Node*>& Utilities::AABB_Tree::GetNodes() const {
+const std::vector<std::shared_ptr<Utilities::AABB_Tree::Node>>& Utilities::AABB_Tree::GetNodes() const {
 	return m_nodes;
 }

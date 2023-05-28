@@ -26,14 +26,18 @@ void Simulation::PhysicsSimulation::KeyboardInput() {
 		glfwSetWindowShouldClose(m_window, true);
 
 	if (glfwGetKey(m_window, GLFW_KEY_E) == GLFW_PRESS && !m_hasSpawned) {
-		m_objects.push_back(new Objects::PhysicsObject(m_spectator.GetPosition() + (m_spectator.GetDirection() * 3.0f), glm::vec3(1.0f), true, 20.0f, m_spectator.GetDirection() * 7.5f, "cube_model"));
+		m_objects.push_back(std::make_unique<Objects::PhysicsObject>(m_spectator.GetPosition() + (m_spectator.GetDirection() * 3.0f),
+			glm::vec3(1.0f), true, 20.0f, m_spectator.GetDirection() * 7.5f,
+			"cube_model"));
 		m_hasSpawned = true;
-		m_tree.InsertLeaf(m_objects.back());
+		m_tree.InsertLeaf(m_objects.back().get());
 	}
 	else if (glfwGetKey(m_window, GLFW_KEY_Q) == GLFW_PRESS && !m_hasSpawned) {
-		m_objects.push_back(new Objects::PhysicsObject(m_spectator.GetPosition() + (m_spectator.GetDirection() * 3.0f), glm::vec3(10.0f, 0.5f, 10.0f), false, 1000.0f, glm::vec3(0.0f), "cube_model"));
+		m_objects.push_back(std::make_unique<Objects::PhysicsObject>(m_spectator.GetPosition() + (m_spectator.GetDirection() * 3.0f),
+			glm::vec3(10.0f, 0.5f, 10.0f), false, 1000.0f, glm::vec3(0.0f),
+			"cube_model"));
 		m_hasSpawned = true;
-		m_tree.InsertLeaf(m_objects.back());
+		m_tree.InsertLeaf(m_objects.back().get());
 	}
 	else if (glfwGetKey(m_window, GLFW_KEY_E) == GLFW_RELEASE && glfwGetKey(m_window, GLFW_KEY_Q) == GLFW_RELEASE)
 		m_hasSpawned = false;
@@ -98,7 +102,7 @@ void Simulation::PhysicsSimulation::UpdateTime() {
 
 void Simulation::PhysicsSimulation::Render() {
 	m_render.UpdateBuffer(m_spectator.GetMatrix(), Render::Renderer::Offsets::View);
-	for (auto object : m_objects)
+	for (const auto& object : m_objects)
 		object->Draw(&m_render);
 }
 

@@ -2,7 +2,7 @@
 
 Objects::PhysicsObject::PhysicsObject(const glm::vec3& position, const glm::vec3& size, bool isKinematic, float mass, glm::vec3 start_linear_velocity, std::string_view model_name) :
 	BasicObject(position, size), m_isKinematic(isKinematic), m_mass(mass), m_inertia_tensor(glm::boxInertia3(m_mass, size)), m_lastPos(), m_linear_velocity(start_linear_velocity),
-	m_model_name(model_name), m_aabb()
+	m_model_name(model_name), m_aabb(), m_id(id_counter++)
 {
 	UpdateMatrix();
 	UpdateAABB();
@@ -87,6 +87,9 @@ std::string_view Objects::PhysicsObject::GetModelName() const {
 }
 const glm::mat4 Objects::PhysicsObject::GetRotate() {
 	return glm::mat4_cast(GetRotation());
+}
+const uint32_t Objects::PhysicsObject::GetID() const {
+	return m_id;
 }
 
 void Objects::PhysicsObject::Draw(Render::Renderer* render) {

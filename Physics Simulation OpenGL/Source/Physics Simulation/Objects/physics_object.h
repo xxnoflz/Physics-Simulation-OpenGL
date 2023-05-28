@@ -15,6 +15,8 @@
 
 namespace Objects {
 
+	static uint32_t id_counter = 0;
+
 	class PhysicsObject : public BasicObject {
 	public:
 		PhysicsObject(const glm::vec3& position, const glm::vec3& size, bool isKinematic, float mass, glm::vec3 start_linear_velocity, std::string_view model_name);
@@ -44,6 +46,7 @@ namespace Objects {
 		const glm::vec3 GetCenter() const;
 		std::string_view GetModelName() const;
 		const glm::mat4 GetRotate();
+		const uint32_t GetID() const;
 	private:
 		bool m_isKinematic;
 		float m_mass;
@@ -57,6 +60,7 @@ namespace Objects {
 		glm::mat4 m_model_matrix;
 
 		Utilities::AABB m_aabb;
+		uint32_t m_id;
 		glm::vec3 m_lastPos;
 	};
 
