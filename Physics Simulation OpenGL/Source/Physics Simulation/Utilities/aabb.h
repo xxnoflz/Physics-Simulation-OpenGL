@@ -18,6 +18,7 @@ namespace Utilities {
 		const glm::vec3& GetUpperBound() const;
 
 		float GetArea();
+		bool Contains(const AABB& object);
 
 		static AABB Union(const AABB& first, const AABB& second);
 	private:

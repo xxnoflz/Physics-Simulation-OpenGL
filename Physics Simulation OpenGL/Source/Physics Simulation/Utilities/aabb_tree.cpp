@@ -2,12 +2,17 @@
 
 Utilities::AABB_Tree::AABB_Tree() : m_nodes(), m_root() {}
 
-void Utilities::AABB_Tree::Update(std::vector<std::unique_ptr<Objects::PhysicsObject>>& objects) {
-	for (const auto& object : objects) 
-		if (object->isKinematic()) {
-			RemoveLeaf(object.get());
-			InsertLeaf(object.get());
+void Utilities::AABB_Tree::Update() {
+	for (const auto& node : m_nodes) {
+		if (!node.get()->isLeaf)
+			continue;
+
+		Objects::PhysicsObject* object{ node.get()->object };
+		if (object->isKinematic() && !node.get()->box.Contains(object->GetAABB())) {
+			RemoveLeaf(node);
+			InsertLeaf(object);
 		}
+	}
 }
 
 void Utilities::AABB_Tree::InsertLeaf(Objects::PhysicsObject* object) {
@@ -53,18 +58,7 @@ void Utilities::AABB_Tree::InsertLeaf(Objects::PhysicsObject* object) {
 	}
 }
 
-void Utilities::AABB_Tree::RemoveLeaf(Objects::PhysicsObject* object) {
-	std::weak_ptr<Node> nodeToDelete{};
-	for (const auto& node : m_nodes)
-		if (node->object == object) {
-			nodeToDelete = node;
-
-			break;
-		}
-
-	if (nodeToDelete.expired())
-		return;
-
+void Utilities::AABB_Tree::RemoveLeaf(std::weak_ptr<Node> nodeToDelete) {
 	if (nodeToDelete.lock() == m_root.lock()) 
 		m_root.reset();
 
@@ -100,7 +94,7 @@ void Utilities::AABB_Tree::RemoveLeaf(Objects::PhysicsObject* object) {
 std::weak_ptr<Utilities::AABB_Tree::Node> Utilities::AABB_Tree::AllocateLeafNode(Objects::PhysicsObject* object) {
 	m_nodes.push_back(std::make_shared<Node>());
 
-	m_nodes.back()->box = object->GetAABB();
+	m_nodes.back()->box = { object->GetAABB().GetLowerBound() - AABB_MARGIN, object->GetAABB().GetUpperBound() + AABB_MARGIN };
 	m_nodes.back()->object = object;
 	m_nodes.back()->isLeaf = true;
 

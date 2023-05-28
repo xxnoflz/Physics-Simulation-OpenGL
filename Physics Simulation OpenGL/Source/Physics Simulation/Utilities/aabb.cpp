@@ -48,6 +48,13 @@ float Utilities::AABB::GetArea() {
 	return 2.0f * (diagonal.x * diagonal.y + diagonal.y * diagonal.z + diagonal.z * diagonal.x);
 }
 
+bool Utilities::AABB::Contains(const Utilities::AABB& object) {
+	bool xCoord{ m_lowerBound.x <= object.GetLowerBound().x && m_upperBound.x >= object.GetUpperBound().x };
+	bool yCoord{ m_lowerBound.y <= object.GetLowerBound().y && m_upperBound.y >= object.GetUpperBound().y };
+	bool zCoord{ m_lowerBound.z <= object.GetLowerBound().z && m_upperBound.z >= object.GetUpperBound().z };
+	return xCoord && yCoord && zCoord;
+}
+
 Utilities::AABB Utilities::AABB::Union(const AABB& first, const AABB& second) {
 	return { MinimumOfTwo(first, second), MaximumOfTwo(first, second) };
 }

@@ -8,6 +8,8 @@
 
 namespace Utilities {
 
+	constexpr float AABB_MARGIN = 0.2f;
+
 	class AABB_Tree {
 	public:
 		struct Node {
@@ -24,10 +26,10 @@ namespace Utilities {
 
 		AABB_Tree();
 
-		void Update(std::vector<std::unique_ptr<Objects::PhysicsObject>>& objects);
+		void Update();
 
 		void InsertLeaf(Objects::PhysicsObject* object);
-		void RemoveLeaf(Objects::PhysicsObject* object);
+		void RemoveLeaf(std::weak_ptr<Node> nodeToDelete);
 
 		const std::weak_ptr<Node> GetRoot() const;
 		const std::vector<std::shared_ptr<Node>>& GetNodes() const;

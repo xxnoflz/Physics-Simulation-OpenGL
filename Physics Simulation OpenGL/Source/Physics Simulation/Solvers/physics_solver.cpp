@@ -4,7 +4,7 @@ void Solvers::PhysicsSolver::Update(std::vector<std::unique_ptr<Objects::Physics
 	ApplyGravity(objects);
 	UpdatePositions(objects, deltaTime);
 	UpdateAABB(objects);
-	tree.Update(objects);
+	tree.Update();
 	SolveCollisions(objects, tree, deltaTime);
 }
 
