@@ -25,7 +25,7 @@ void Utilities::AABB_Tree::InsertLeaf(Objects::PhysicsObject* object) {
 	newParent.lock()->parent = oldParent;
 	newParent.lock()->box = AABB::Union(newLeaf.lock()->box, bestSibling.lock()->box);
 
-	if (oldParent.lock() != nullptr) {
+	if (!oldParent.expired()) {
 		if (oldParent.lock()->firstChild.lock() == bestSibling.lock())
 			oldParent.lock()->firstChild = newParent;
 		else
@@ -47,7 +47,7 @@ void Utilities::AABB_Tree::InsertLeaf(Objects::PhysicsObject* object) {
 	}
 
 	std::weak_ptr<Node> nodeIterator{ newLeaf.lock()->parent };
-	while (nodeIterator.lock() != nullptr) {
+	while (!nodeIterator.expired()) {
 		nodeIterator.lock()->box = AABB::Union(nodeIterator.lock().get()->firstChild.lock().get()->box, nodeIterator.lock().get()->secondChild.lock().get()->box);
 		nodeIterator = nodeIterator.lock()->parent;
 	}
@@ -62,39 +62,39 @@ void Utilities::AABB_Tree::RemoveLeaf(Objects::PhysicsObject* object) {
 			break;
 		}
 
-	if (nodeToDelete.lock() == nullptr)
+	if (nodeToDelete.expired())
 		return;
+
+	if (nodeToDelete.lock() == m_root.lock()) 
+		m_root.reset();
 
 	std::weak_ptr<Node> parent{ nodeToDelete.lock()->parent };
-	std::weak_ptr<Node> grandParent{ parent.lock()->parent };
-	std::weak_ptr<Node> sibling{ (parent.lock()->firstChild.lock() == nodeToDelete.lock()) ? parent.lock()->secondChild : parent.lock()->firstChild };
+	if (!parent.expired()) {
+		std::weak_ptr<Node> grandParent{ parent.lock()->parent };
+		std::weak_ptr<Node> sibling{ (parent.lock()->firstChild.lock() == nodeToDelete.lock()) ? parent.lock()->secondChild : parent.lock()->firstChild };
 
-	if (nodeToDelete.lock() == m_root.lock()) {
-		m_root.lock() = nullptr;
-		return;
-	}
+		if (!grandParent.expired()) {
+			if (grandParent.lock()->firstChild.lock() == parent.lock())
+				grandParent.lock()->firstChild = sibling;
+			else
+				grandParent.lock()->secondChild = sibling;
 
-	if (grandParent.lock() != nullptr) {
-		if (grandParent.lock()->firstChild.lock() == parent.lock())
-			grandParent.lock()->firstChild = sibling;
-		else
-			grandParent.lock()->secondChild = sibling;
-		sibling.lock()->parent = grandParent.lock();
-		m_nodes.erase(std::remove(m_nodes.begin(), m_nodes.end(), parent.lock()), m_nodes.end());
+			sibling.lock()->parent = grandParent.lock();
+			m_nodes.erase(std::remove(m_nodes.begin(), m_nodes.end(), parent.lock()), m_nodes.end());
 
-		while (grandParent.lock() != nullptr) {
-			grandParent.lock()->box = AABB::Union(grandParent.lock().get()->firstChild.lock().get()->box, grandParent.lock().get()->secondChild.lock().get()->box);
-			grandParent = grandParent.lock()->parent;
+			while (!grandParent.expired()) {
+				grandParent.lock()->box = AABB::Union(grandParent.lock().get()->firstChild.lock().get()->box, grandParent.lock().get()->secondChild.lock().get()->box);
+				grandParent = grandParent.lock()->parent;
+			}
 		}
-	}
-	else {
-		m_root = sibling;
-		sibling.lock() = nullptr;
-		m_nodes.erase(std::remove(m_nodes.begin(), m_nodes.end(), parent.lock()), m_nodes.end());
+		else {
+			m_root = sibling;
+			sibling.lock().get()->parent.reset();
+			m_nodes.erase(std::remove(m_nodes.begin(), m_nodes.end(), parent.lock()), m_nodes.end());
+		}
 	}
 
 	m_nodes.erase(std::remove(m_nodes.begin(), m_nodes.end(), nodeToDelete.lock()), m_nodes.end());
-	nodeToDelete.reset();
 }
 
 std::weak_ptr<Utilities::AABB_Tree::Node> Utilities::AABB_Tree::AllocateLeafNode(Objects::PhysicsObject* object) {
@@ -137,7 +137,7 @@ std::weak_ptr<Utilities::AABB_Tree::Node> Utilities::AABB_Tree::PickBest(std::we
 		float cost{ united.GetArea() };
 		std::weak_ptr<Node> parent{ node->parent };
 
-		while (parent.lock() != nullptr) {
+		while (!parent.expired()) {
 			AABB parentUnited{ AABB::Union(leaf.lock()->box, parent.lock()->box) };
 			cost += parentUnited.GetArea() - parent.lock()->box.GetArea();
 			parent = parent.lock()->parent;
