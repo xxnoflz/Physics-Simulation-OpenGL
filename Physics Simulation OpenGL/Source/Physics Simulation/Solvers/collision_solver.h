@@ -39,8 +39,6 @@ namespace Solvers {
 		static std::tuple<bool, CollisionData> CheckCollision(Objects::PhysicsObject* first, Objects::PhysicsObject* second);
 		static void ResolveCollision(CollisionData collision_data, std::vector<float>& accumulatedImpulses, std::vector<float>& accumulatedFrictions, float deltaTime);
 	private:
-		static std::vector<glm::vec3> GetObjectWorldPoints(const Objects::PhysicsObject* object);
-		static std::vector<glm::vec3> GetNormals(Objects::PhysicsObject* object);
 		static Projection GetProjection(const glm::vec3& axis, const std::vector<glm::vec3>& objectPoints);
 
 		static std::vector<glm::vec3> GenerateManifold(Objects::PhysicsObject* first, Objects::PhysicsObject* second, const glm::vec3& collisionNormal);

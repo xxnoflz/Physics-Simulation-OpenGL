@@ -29,7 +29,7 @@ namespace Utilities {
 
 		const std::vector<glm::vec4>& GetVertices() const;
 		const std::vector<glm::vec3>& GetNormals() const;
-		const std::vector<Face> GetFaces(const glm::mat4& modelMatrix, const glm::mat4& rotation);
+		const std::vector<Face>& GetFaces() const;
 	private:
 		GLuint m_VAO;
 		GLuint m_VBO;
@@ -41,8 +41,10 @@ namespace Utilities {
 		std::vector<uint32_t> m_indices;
 		std::vector<glm::vec3> m_normals;
 		std::vector<uint32_t> m_normalIndices;
+		std::vector<Utilities::Model::Face> m_faces;
 
 		void Init();
+		void UpdateFaces();
 	};
 
 }

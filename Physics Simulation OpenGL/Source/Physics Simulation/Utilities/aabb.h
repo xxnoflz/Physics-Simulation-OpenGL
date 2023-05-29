@@ -9,7 +9,7 @@ namespace Utilities {
 		AABB();
 		AABB(const glm::vec3& lowerBound, const glm::vec3& upperBound);
 
-		void Update(const std::vector<glm::vec4>& objectVertices);
+		void Update(const std::vector<glm::vec3>& objectVertices);
 
 		static const glm::vec3 MinimumOfTwo(const AABB& first, const AABB& second);
 		static const glm::vec3 MaximumOfTwo(const AABB& first, const AABB& second);

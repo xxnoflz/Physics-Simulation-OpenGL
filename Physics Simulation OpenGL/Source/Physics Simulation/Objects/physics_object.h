@@ -35,7 +35,18 @@ namespace Objects {
 
 		const std::vector<glm::vec4>& GetVertices() const;
 		const std::vector<glm::vec3>& GetNormals() const;
-		const std::vector<glm::vec4> GetWorldVertices() const;
+
+		void UpdateWorldPoints();
+		void UpdateWorldNormals();
+
+		const std::vector<glm::vec3>& GetWorldPoints();
+		const std::vector<glm::vec3>& GetWorldNormals();
+
+		void UpdateFaces();
+		const std::vector<Utilities::Model::Face>& GetWorldFaces();
+		bool NotUpdatedFaces();
+		void ClearFaces();
+
 		const Utilities::AABB GetAABB() const;
 		const glm::mat4& GetMatrix() const;
 		const float GetMass() const;
@@ -61,6 +72,11 @@ namespace Objects {
 
 		Utilities::AABB m_aabb;
 		uint32_t m_id;
+
+		std::vector<glm::vec3> m_world_points;
+		std::vector<glm::vec3> m_world_normals;
+		std::vector<Utilities::Model::Face> m_world_faces;
+
 		glm::vec3 m_lastPos;
 	};
 

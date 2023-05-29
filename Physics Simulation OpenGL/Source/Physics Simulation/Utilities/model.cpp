@@ -5,6 +5,7 @@ Utilities::Model::Model(const std::vector<glm::vec4>& vertices, const std::vecto
 	m_vertices(vertices), m_indices(indices), m_normals(normals), m_normalIndices(normalIndices), m_shader_name(shader_name)
 {
 	Init();
+	UpdateFaces();
 }
 
 void Utilities::Model::Init() {
@@ -26,6 +27,22 @@ void Utilities::Model::Init() {
 	glBindVertexArray(0);
 }
 
+void Utilities::Model::UpdateFaces() {
+	if(m_indices.size() % 3 != 0 && m_normalIndices.size() % 3 != 0 && m_indices.size() != m_normalIndices.size())
+		return;
+
+	for (uint32_t iterator{}; iterator < m_indices.size(); iterator += 6) {
+		Face face{};
+		face.normal = m_normals[m_normalIndices[iterator]];
+		for (uint32_t vertex_iterator{ iterator }; vertex_iterator < iterator + 6; ++vertex_iterator) {
+			glm::vec3 element{ m_vertices[m_indices[vertex_iterator]] };
+			if(std::find(face.vertices.begin(), face.vertices.end(), element) == face.vertices.end())
+				face.vertices.push_back(element);
+		}
+		m_faces.push_back(face);
+	}
+}
+
 void Utilities::Model::Draw(Render::Renderer* render) {
 	render->DrawIndices(m_VAO, m_indices.size());
 }
@@ -42,20 +59,6 @@ const std::vector<glm::vec3>& Utilities::Model::GetNormals() const {
 	return m_normals;
 }
 
-const std::vector<Utilities::Model::Face> Utilities::Model::GetFaces(const glm::mat4& modelMatrix, const glm::mat4& rotation)  {
-	if(m_indices.size() % 3 != 0 && m_normalIndices.size() % 3 != 0 && m_indices.size() != m_normalIndices.size())
-		return {};
-
-	std::vector<Face> faces;
-	for (uint32_t iterator{}; iterator < m_indices.size(); iterator += 6) {
-		Face face{};
-		face.normal = rotation * glm::vec4(m_normals[m_normalIndices[iterator]], 1.0f);
-		for (uint32_t vertex_iterator{ iterator }; vertex_iterator < iterator + 6; ++vertex_iterator) {
-			glm::vec3 element{ modelMatrix * m_vertices[m_indices[vertex_iterator]] };
-			if(std::find(face.vertices.begin(), face.vertices.end(), element) == face.vertices.end())
-				face.vertices.push_back(element);
-		}
-		faces.push_back(face);
-	}
-	return faces;
+const std::vector<Utilities::Model::Face>& Utilities::Model::GetFaces() const {
+	return m_faces;
 }

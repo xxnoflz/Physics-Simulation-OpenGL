@@ -2,9 +2,13 @@
 
 Objects::PhysicsObject::PhysicsObject(const glm::vec3& position, const glm::vec3& size, bool isKinematic, float mass, glm::vec3 start_linear_velocity, std::string_view model_name) :
 	BasicObject(position, size), m_isKinematic(isKinematic), m_mass(mass), m_inertia_tensor(glm::boxInertia3(m_mass, size)), m_lastPos(), m_linear_velocity(start_linear_velocity),
-	m_model_name(model_name), m_aabb(), m_id(id_counter++)
+	m_model_name(model_name), m_aabb(), m_id(id_counter++), m_world_points(), m_world_normals()
 {
 	UpdateMatrix();
+
+	UpdateWorldPoints();
+	UpdateWorldNormals();
+
 	UpdateAABB();
 }
 
@@ -15,7 +19,7 @@ void Objects::PhysicsObject::UpdateMatrix() {
 	m_model_matrix = glm::scale(m_model_matrix, GetSize());
 }
 void Objects::PhysicsObject::UpdateAABB() {
-	m_aabb.Update(GetWorldVertices());
+	m_aabb.Update(GetWorldPoints());
 }
 
 const glm::mat4& Objects::PhysicsObject::GetMatrix() const {
@@ -30,13 +34,54 @@ const std::vector<glm::vec3>& Objects::PhysicsObject::GetNormals() const {
 	return Utilities::ResourceManager::GetModel(m_model_name).GetNormals();
 }
 
-const std::vector<glm::vec4> Objects::PhysicsObject::GetWorldVertices() const {
-	std::vector<glm::vec4> objectPoints{ GetVertices() };
-	if (objectPoints.empty())
-		return {};
-	for (auto& point : objectPoints)
-		point = m_model_matrix * point;
-	return objectPoints;
+void Objects::PhysicsObject::UpdateWorldPoints() {
+	m_world_points.clear();
+	const std::vector<glm::vec4> objectPoints{ GetVertices() };
+
+	for (const auto& point : objectPoints)
+		m_world_points.push_back(m_model_matrix * point);
+}
+void Objects::PhysicsObject::UpdateWorldNormals() {
+	m_world_normals.clear();
+	const std::vector<glm::vec3> objectNormals{ GetNormals() };
+
+	for (const auto& normal : objectNormals)
+		m_world_normals.push_back(GetRotate() * glm::vec4(normal, 1.0f));
+}
+
+const std::vector<glm::vec3>& Objects::PhysicsObject::GetWorldPoints() {
+	return m_world_points;
+}
+const std::vector<glm::vec3>& Objects::PhysicsObject::GetWorldNormals() {
+	return m_world_normals;
+}
+
+void Objects::PhysicsObject::UpdateFaces() {
+	const std::vector<Utilities::Model::Face> objectFaces{ Utilities::ResourceManager::GetModel(m_model_name).GetFaces() };
+
+	for (const auto& [vertices, normal] : objectFaces) {
+		Utilities::Model::Face face{};
+		face.normal = GetRotate() * glm::vec4(normal, 1.0f);
+		for (const auto& vertex : vertices)
+			face.vertices.push_back(m_model_matrix * glm::vec4(vertex, 1.0f));
+
+		m_world_faces.push_back(face);
+	}
+}
+
+const std::vector<Utilities::Model::Face>& Objects::PhysicsObject::GetWorldFaces() {
+	if (m_world_faces.empty())
+		UpdateFaces();
+
+	return m_world_faces;
+}
+
+bool Objects::PhysicsObject::NotUpdatedFaces() {
+	return !m_world_faces.empty();
+}
+
+void Objects::PhysicsObject::ClearFaces() {
+	m_world_faces.clear();
 }
 
 const Utilities::AABB Objects::PhysicsObject::GetAABB() const {

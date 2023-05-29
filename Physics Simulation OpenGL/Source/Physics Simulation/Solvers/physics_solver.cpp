@@ -1,27 +1,26 @@
 #include "physics_solver.h"
 
 void Solvers::PhysicsSolver::Update(std::vector<std::unique_ptr<Objects::PhysicsObject>>& objects, Utilities::AABB_Tree& tree, float deltaTime) {
-	ApplyGravity(objects);
-	UpdatePositions(objects, deltaTime);
-	UpdateAABB(objects);
+	UpdateObjects(objects, deltaTime);
 	tree.Update();
 	SolveCollisions(objects, tree, deltaTime);
 }
 
-void Solvers::PhysicsSolver::UpdateAABB(std::vector<std::unique_ptr<Objects::PhysicsObject>>& objects) {
-	for (const auto& object : objects)
-		if(object->isKinematic())
-			object->UpdateAABB();
-}
+void Solvers::PhysicsSolver::UpdateObjects(std::vector<std::unique_ptr<Objects::PhysicsObject>>& objects, float deltaTime) {
+	for (const auto& object : objects) {
+		if (!object->isKinematic())
+			continue;
 
-void Solvers::PhysicsSolver::ApplyGravity(std::vector<std::unique_ptr<Objects::PhysicsObject>>& objects) {
-	for (const auto& object : objects)
 		object->Accelerate(gravityConstant);
-}
-
-void Solvers::PhysicsSolver::UpdatePositions(std::vector<std::unique_ptr<Objects::PhysicsObject>>& objects, float deltaTime) {
-	for (const auto& object : objects)
 		object->Integrate(deltaTime);
+		
+		object->UpdateWorldPoints();
+		object->UpdateWorldNormals();
+		if (object->NotUpdatedFaces())
+			object->ClearFaces();
+
+		object->UpdateAABB();
+	}
 }
 
 void Solvers::PhysicsSolver::SolveCollisions(std::vector<std::unique_ptr<Objects::PhysicsObject>>& objects, Utilities::AABB_Tree& tree, float deltaTime) {

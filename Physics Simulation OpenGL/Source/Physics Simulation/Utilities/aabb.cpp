@@ -3,7 +3,7 @@
 Utilities::AABB::AABB() : m_lowerBound(), m_upperBound() { }
 Utilities::AABB::AABB(const glm::vec3& lowerBound, const glm::vec3& upperBound) : m_lowerBound(lowerBound), m_upperBound(upperBound) {}
 
-void Utilities::AABB::Update(const std::vector<glm::vec4>& objectVertices) {
+void Utilities::AABB::Update(const std::vector<glm::vec3>& objectVertices) {
 	glm::vec3 currentMin{ std::numeric_limits<float>::max() };
 	glm::vec3 currentMax{};
 

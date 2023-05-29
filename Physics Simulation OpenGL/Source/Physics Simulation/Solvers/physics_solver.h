@@ -22,9 +22,8 @@ namespace Solvers {
 	public:
 		static void Update(std::vector<std::unique_ptr<Objects::PhysicsObject>>& objects, Utilities::AABB_Tree& tree, float deltaTime);
 	private:
-		static void UpdateAABB(std::vector<std::unique_ptr<Objects::PhysicsObject>>& objects);
-		static void ApplyGravity(std::vector<std::unique_ptr<Objects::PhysicsObject>>& objects);
-		static void UpdatePositions(std::vector<std::unique_ptr<Objects::PhysicsObject>>& objects, float deltaTime);
+		static void UpdateObjects(std::vector<std::unique_ptr<Objects::PhysicsObject>>& objects, float deltaTime);
+
 		static void SolveCollisions(std::vector<std::unique_ptr<Objects::PhysicsObject>>& objects, Utilities::AABB_Tree& tree, float deltaTime);
 	};
 

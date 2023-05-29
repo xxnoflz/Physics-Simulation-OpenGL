@@ -9,11 +9,11 @@ bool Solvers::CollisionSolver::CheckCollisionAABB(const Utilities::AABB& first, 
 }
 
 std::tuple<bool, Solvers::CollisionSolver::CollisionData> Solvers::CollisionSolver::CheckCollision(Objects::PhysicsObject* first, Objects::PhysicsObject* second) {
-	const std::vector<glm::vec3> firstPoints{ GetObjectWorldPoints(first) };
-	const std::vector<glm::vec3> secondPoints{ GetObjectWorldPoints(second) };
+	const std::vector<glm::vec3> firstPoints{ first->GetWorldPoints() };
+	const std::vector<glm::vec3> secondPoints{ second->GetWorldPoints()  };
 
-	const std::vector<glm::vec3> firstNormals{ GetNormals(first) };
-	const std::vector<glm::vec3> secondNormals{ GetNormals(second) };
+	const std::vector<glm::vec3> firstNormals{ first->GetWorldNormals()  };
+	const std::vector<glm::vec3> secondNormals{ second->GetWorldNormals()  };
 
 	std::vector<glm::vec3> axes{};
 	axes.insert(axes.end(), firstNormals.begin(), firstNormals.end());
@@ -46,21 +46,6 @@ std::tuple<bool, Solvers::CollisionSolver::CollisionData> Solvers::CollisionSolv
 	return std::make_tuple(true, data);
 }
 
-std::vector<glm::vec3> Solvers::CollisionSolver::GetObjectWorldPoints(const Objects::PhysicsObject* object) {
-	std::vector<glm::vec3> objectPoints{};
-	for (const auto& point : object->GetVertices())
-		objectPoints.push_back(object->GetMatrix() * point);
-	return objectPoints;
-}
-
-std::vector<glm::vec3> Solvers::CollisionSolver::GetNormals(Objects::PhysicsObject* object) {
-	const glm::mat4 rotation{ object->GetRotate() };
-	std::vector<glm::vec3> normals{};
-	for (const auto& normal : object->GetNormals())
-		normals.push_back(rotation * glm::vec4(normal, 1.0f));
-	return normals;
-}
-
 Solvers::CollisionSolver::Projection Solvers::CollisionSolver::GetProjection(const glm::vec3& axis, const std::vector<glm::vec3>& objectPoints) {
 	Projection projection{};
 	projection.minProjection = std::numeric_limits<float>::max();
@@ -82,8 +67,8 @@ Solvers::CollisionSolver::Projection Solvers::CollisionSolver::GetProjection(con
 
 //Contact Manifold
 std::vector<glm::vec3> Solvers::CollisionSolver::GenerateManifold(Objects::PhysicsObject* first, Objects::PhysicsObject* second, const glm::vec3& collisionNormal) {
-	std::vector<Utilities::Model::Face> firstFaces{ Utilities::ResourceManager::GetModel(first->GetModelName()).GetFaces(first->GetMatrix(), first->GetRotate()) };
-	std::vector<Utilities::Model::Face> secondFaces{ Utilities::ResourceManager::GetModel(second->GetModelName()).GetFaces(second->GetMatrix(), second->GetRotate()) };
+	std::vector<Utilities::Model::Face> firstFaces{ first->GetWorldFaces() };
+	std::vector<Utilities::Model::Face> secondFaces{ second->GetWorldFaces() };
 
 	const glm::vec3 furthestFirst{ GetFurthestPoint(firstFaces, collisionNormal) };
 	const glm::vec3 furthestSecond{ GetFurthestPoint(secondFaces, -collisionNormal) };
