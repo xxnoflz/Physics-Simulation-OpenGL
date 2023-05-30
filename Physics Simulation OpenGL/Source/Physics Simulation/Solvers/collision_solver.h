@@ -14,7 +14,7 @@
 namespace Solvers {
 
 	constexpr float BIAS{ 0.1f };
-	constexpr float SLOP{ 0.001f };
+	constexpr float SLOP{ 0.0005f };
 
 	class CollisionSolver {
 		struct Projection {
