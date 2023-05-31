@@ -200,77 +200,71 @@ void Solvers::CollisionSolver::ResolveCollision(CollisionData collision_data,
 	std::vector<float>& accumulatedImpulses, std::vector<float>& accumulatedFrictions, 
 	float deltaTime) 
 {
-	float totalInverseMass{ (1.0f / collision_data.manifold.firstObject->GetMass()) + (1.0f / collision_data.manifold.secondObject->GetMass()) };
-	//float firstLeftTime{
-	//	glm::clamp(deltaTime - (glm::length(collision_data.manifold.firstObject->GetLastPos() - collision_data.manifold.firstObject->GetPosition()) / glm::length(collision_data.manifold.firstObject->GetLinearVelocity())), 0.0f, std::numeric_limits<float>::infinity())
-	//};
-	//float secondLeftTime{
-	//	glm::clamp(deltaTime - (glm::length(collision_data.manifold.secondObject->GetLastPos() - collision_data.manifold.secondObject->GetPosition()) / glm::length(collision_data.manifold.secondObject->GetLinearVelocity())), 0.0f, std::numeric_limits<float>::infinity())
-	//};
+	const float totalInverseMass{ (1.0f / collision_data.manifold.firstObject->GetMass()) + (1.0f / collision_data.manifold.secondObject->GetMass()) };
 
 	for (uint32_t currentManifold{}; currentManifold < collision_data.manifold.vertices.size(); ++currentManifold) {
-		SolveNormalImpulse(collision_data.manifold.firstObject, collision_data.manifold.secondObject, collision_data, currentManifold, deltaTime, totalInverseMass, accumulatedImpulses);
-		SolveFrictionImpulse(collision_data.manifold.firstObject, collision_data.manifold.secondObject, collision_data, currentManifold, totalInverseMass, accumulatedImpulses, accumulatedFrictions);
-	}
+		const ContactPointData currentData{ GetContactPointData(collision_data, currentManifold) };
 
-	//collision_data.manifold.firstObject->Integrate(firstLeftTime);
-	//collision_data.manifold.secondObject->Integrate(secondLeftTime);
+		SolveNormalImpulse(collision_data.manifold.firstObject, collision_data.manifold.secondObject, 
+			collision_data, currentManifold, currentData,
+			deltaTime, 
+			totalInverseMass, accumulatedImpulses);
+		SolveFrictionImpulse(collision_data.manifold.firstObject, collision_data.manifold.secondObject, 
+			collision_data, currentManifold, currentData,
+			totalInverseMass, accumulatedImpulses, accumulatedFrictions);
+	}
+}
+
+const Solvers::CollisionSolver::ContactPointData Solvers::CollisionSolver::GetContactPointData(const CollisionData& collision_data, uint32_t currentManifold) {
+	ContactPointData data{};
+
+	data.relativeFirst = collision_data.manifold.vertices[currentManifold] - collision_data.manifold.firstObject->GetCenter();
+	data.relativeSecond = collision_data.manifold.vertices[currentManifold] - collision_data.manifold.secondObject->GetCenter();
+
+	data.angVelocityFirst = glm::cross(collision_data.manifold.firstObject->GetAngularVelocity(), data.relativeFirst);
+	data.angVelocitySecond = glm::cross(collision_data.manifold.secondObject->GetAngularVelocity(), data.relativeSecond);
+
+	data.fullVelocityFirst = collision_data.manifold.firstObject->GetLinearVelocity() + data.angVelocityFirst;
+	data.fullVelocitySecond = collision_data.manifold.secondObject->GetLinearVelocity() + data.angVelocitySecond;
+	data.contactVelocity = data.fullVelocitySecond - data.fullVelocityFirst;
+
+	return data;
 }
 
 void Solvers::CollisionSolver::SolveNormalImpulse(Objects::PhysicsObject* first, Objects::PhysicsObject* second,
-	CollisionData collision_data, uint32_t currentManifold,
-	float deltaTime,
-	float totalInverseMass, std::vector<float>& accumulatedImpulses)
+	const CollisionData& collision_data, const uint32_t currentManifold, const ContactPointData& data,
+	const float deltaTime,
+	const float totalInverseMass, std::vector<float>& accumulatedImpulses)
 {
-	glm::vec3 relativeFirst{ collision_data.manifold.vertices[currentManifold] - first->GetCenter() };
-	glm::vec3 relativeSecond{ collision_data.manifold.vertices[currentManifold] - second->GetCenter() };
+	const float impulseForce{ glm::dot(data.contactVelocity, collision_data.normal) };
 
-	glm::vec3 angVelocityFirst{ glm::cross(first->GetAngularVelocity(), relativeFirst) };
-	glm::vec3 angVelocitySecond{ glm::cross(second->GetAngularVelocity(), relativeSecond) };
+	const glm::vec3 inertiaFirst{ glm::cross(first->GetInverseWorldTensor() * glm::cross(data.relativeFirst, collision_data.normal), data.relativeFirst) };
+	const glm::vec3 inertiaSecond{ glm::cross(second->GetInverseWorldTensor() * glm::cross(data.relativeSecond, collision_data.normal), data.relativeSecond) };
+	const float angularEffect{ glm::dot(inertiaFirst + inertiaSecond, collision_data.normal) };
 
-	glm::vec3 fullVelocityFirst{ first->GetLinearVelocity() + angVelocityFirst };
-	glm::vec3 fullVelocitySecond{ second->GetLinearVelocity() + angVelocitySecond };
-	glm::vec3 contactVelocity{ fullVelocitySecond - fullVelocityFirst };
+	const float correction{ (BIAS / deltaTime) * std::max(0.0f, collision_data.distance - SLOP) };
+	const float numerator{ -glm::dot(data.contactVelocity, collision_data.normal) + correction };
+	const float impulse{ numerator / (totalInverseMass + angularEffect) };
 
-	float impulseForce{ glm::dot(contactVelocity, collision_data.normal) };
-
-	glm::vec3 inertiaFirst{ glm::cross(first->GetInverseWorldTensor() * glm::cross(relativeFirst, collision_data.normal), relativeFirst) };
-	glm::vec3 inertiaSecond{ glm::cross(second->GetInverseWorldTensor() * glm::cross(relativeSecond, collision_data.normal), relativeSecond) };
-	float angularEffect{ glm::dot(inertiaFirst + inertiaSecond, collision_data.normal) };
-
-	float correction{ (BIAS / deltaTime) * std::max(0.0f, collision_data.distance - SLOP) };
-	float numerator{ -glm::dot(contactVelocity, collision_data.normal) + correction };
-	float impulse{ numerator / (totalInverseMass + angularEffect) };
-
-	float temp{ accumulatedImpulses[currentManifold] };
+	const float temp{ accumulatedImpulses[currentManifold] };
 	accumulatedImpulses[currentManifold] = std::max(accumulatedImpulses[currentManifold] + impulse, 0.0f);
-	float deltaImpulse{ accumulatedImpulses[currentManifold] - temp };
+	const float deltaImpulse{ accumulatedImpulses[currentManifold] - temp };
 
-	glm::vec3 fullImpulse{ collision_data.normal * deltaImpulse };
+	const glm::vec3 fullImpulse{ collision_data.normal * deltaImpulse };
 	first->AppyLinearImpulse(-fullImpulse);
 	second->AppyLinearImpulse(fullImpulse);
 
-	first->AppyAngularImpulse(glm::cross(relativeFirst, -fullImpulse));
-	second->AppyAngularImpulse(glm::cross(relativeSecond, fullImpulse));
+	first->AppyAngularImpulse(glm::cross(data.relativeFirst, -fullImpulse));
+	second->AppyAngularImpulse(glm::cross(data.relativeSecond, fullImpulse));
 }
 
 void Solvers::CollisionSolver::SolveFrictionImpulse(Objects::PhysicsObject* first, Objects::PhysicsObject* second,
-	CollisionData collision_data, uint32_t currentManifold,
-	float totalInverseMass, std::vector<float>& accumulatedImpulses, std::vector<float>& accumulatedFrictions)
+	const CollisionData& collision_data, const uint32_t currentManifold, const ContactPointData& data,
+	const float totalInverseMass, std::vector<float>& accumulatedImpulses, std::vector<float>& accumulatedFrictions)
 {
-	glm::vec3 relativeFirst{ collision_data.manifold.vertices[currentManifold] - first->GetCenter() };
-	glm::vec3 relativeSecond{ collision_data.manifold.vertices[currentManifold] - second->GetCenter() };
-
-	glm::vec3 angVelocityFirst{ glm::cross(first->GetAngularVelocity(), relativeFirst) };
-	glm::vec3 angVelocitySecond{ glm::cross(second->GetAngularVelocity(), relativeSecond) };
-
-	glm::vec3 fullVeloctyFirst{ first->GetLinearVelocity() + angVelocityFirst };
-	glm::vec3 fullVeloctySecond{ second->GetLinearVelocity() + angVelocitySecond };
-	glm::vec3 contactVelocity{ fullVeloctySecond - fullVeloctyFirst };
-
 	glm::vec3 tangent{};
-	if (glm::dot(contactVelocity, collision_data.normal) != 0.0f) {
-		glm::vec3 numerator{ contactVelocity - collision_data.normal * glm::dot(contactVelocity, collision_data.normal) };
+	if (glm::dot(data.contactVelocity, collision_data.normal) != 0.0f) {
+		glm::vec3 numerator{ data.contactVelocity - collision_data.normal * glm::dot(data.contactVelocity, collision_data.normal) };
 		float denominator{ glm::length(numerator) };
 		if (denominator != 0.0f)
 			tangent = numerator / denominator;
@@ -281,43 +275,44 @@ void Solvers::CollisionSolver::SolveFrictionImpulse(Objects::PhysicsObject* firs
 	float coefficientStatic{ 1.0f };
 	float coefficientDynamic{ 0.8f };
 
-	if (glm::dot(contactVelocity, tangent) == 0.0f && glm::dot(contactVelocity, tangent) <= coefficientStatic * glm::length(accumulatedImpulses[currentManifold])) {
-		float friction{ -glm::dot(contactVelocity, tangent) };
+	//TODO: Fix static friction
+	if (glm::dot(data.contactVelocity, tangent) == 0.0f && glm::dot(data.contactVelocity, tangent) <= coefficientStatic * glm::length(accumulatedImpulses[currentManifold])) {
+		const float friction{ -glm::dot(data.contactVelocity, tangent) };
 
-		float tempFriction{ accumulatedFrictions[currentManifold] };
+		const float tempFriction{ accumulatedFrictions[currentManifold] };
 		accumulatedFrictions[currentManifold] = glm::clamp(accumulatedFrictions[currentManifold] + friction,
 			-coefficientStatic * accumulatedImpulses[currentManifold],
 			coefficientStatic * accumulatedImpulses[currentManifold]);
-		float deltaFriction{ accumulatedFrictions[currentManifold] - tempFriction };
-		glm::vec3 fullFriction{ tangent * deltaFriction };
+		const float deltaFriction{ accumulatedFrictions[currentManifold] - tempFriction };
+		const glm::vec3 fullFriction{ tangent * deltaFriction };
 
 		first->AppyLinearImpulse(-fullFriction);
 		second->AppyLinearImpulse(fullFriction);
 
-		first->AppyAngularImpulse(glm::cross(relativeFirst, -fullFriction));
-		second->AppyAngularImpulse(glm::cross(relativeSecond, fullFriction));
+		first->AppyAngularImpulse(glm::cross(data.relativeFirst, -fullFriction));
+		second->AppyAngularImpulse(glm::cross(data.relativeSecond, fullFriction));
 	}
 	else {
-		float frictionNumerator{ -glm::dot(contactVelocity, tangent) };
+		const float frictionNumerator{ -glm::dot(data.contactVelocity, tangent) };
 
-		glm::vec3 frictionInertiaFirst{ glm::cross(first->GetInverseWorldTensor() * glm::cross(relativeFirst, tangent), relativeFirst) };
-		glm::vec3 frictionInertiaSecond{ glm::cross(second->GetInverseWorldTensor() * glm::cross(relativeSecond, tangent), relativeSecond) };
-		float frictionAngularEffect{ glm::dot(frictionInertiaFirst + frictionInertiaSecond, tangent) };
-		float frictionDenominator{ frictionAngularEffect + totalInverseMass };
+		const glm::vec3 frictionInertiaFirst{ glm::cross(first->GetInverseWorldTensor() * glm::cross(data.relativeFirst, tangent), data.relativeFirst) };
+		const glm::vec3 frictionInertiaSecond{ glm::cross(second->GetInverseWorldTensor() * glm::cross(data.relativeSecond, tangent), data.relativeSecond) };
+		const float frictionAngularEffect{ glm::dot(frictionInertiaFirst + frictionInertiaSecond, tangent) };
+		const float frictionDenominator{ frictionAngularEffect + totalInverseMass };
 
-		float friction{ frictionNumerator / frictionDenominator };
+		const float friction{ frictionNumerator / frictionDenominator };
 
-		float tempFriction{ accumulatedFrictions[currentManifold] };
+		const float tempFriction{ accumulatedFrictions[currentManifold] };
 		accumulatedFrictions[currentManifold] = glm::clamp(accumulatedFrictions[currentManifold] + friction,
 			-coefficientDynamic * accumulatedImpulses[currentManifold],
 			coefficientDynamic * accumulatedImpulses[currentManifold]);
-		float deltaFriction{ accumulatedFrictions[currentManifold] - tempFriction };
-		glm::vec3 fullFriction{ tangent * deltaFriction };
+		const float deltaFriction{ accumulatedFrictions[currentManifold] - tempFriction };
+		const glm::vec3 fullFriction{ tangent * deltaFriction };
 
 		first->AppyLinearImpulse(-fullFriction);
 		second->AppyLinearImpulse(fullFriction);
 
-		first->AppyAngularImpulse(glm::cross(relativeFirst, -fullFriction));
-		second->AppyAngularImpulse(glm::cross(relativeSecond, fullFriction));
+		first->AppyAngularImpulse(glm::cross(data.relativeFirst, -fullFriction));
+		second->AppyAngularImpulse(glm::cross(data.relativeSecond, fullFriction));
 	}
 }

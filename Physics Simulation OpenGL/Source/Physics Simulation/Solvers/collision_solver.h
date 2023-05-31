@@ -23,6 +23,17 @@ namespace Solvers {
 			glm::vec3 maxPoint;
 			glm::vec3 minPoint;
 		};
+		struct ContactPointData {
+			glm::vec3 relativeFirst;
+			glm::vec3 relativeSecond;
+
+			glm::vec3 angVelocityFirst;
+			glm::vec3 angVelocitySecond;
+
+			glm::vec3 fullVelocityFirst;
+			glm::vec3 fullVelocitySecond;
+			glm::vec3 contactVelocity;
+		};
 	public:
 		struct Manifold {
 			std::vector<glm::vec3> vertices;
@@ -48,13 +59,14 @@ namespace Solvers {
 			const std::vector<Utilities::Model::Face>& referenceFaces);
 		static glm::vec3 ClipVector(const glm::vec3& subjectVector, const glm::vec3& subjectOrigin, const glm::vec3& clipVertex, const glm::vec3& clipNormal);
 
+		static const ContactPointData GetContactPointData(const CollisionData& collision_data, uint32_t currentManifold);
 		static void SolveNormalImpulse(Objects::PhysicsObject* first, Objects::PhysicsObject* second,
-			CollisionData collision_data, uint32_t currentManifold,
-			float deltaTime,
-			float totalInverseMass, std::vector<float>& accumulatedImpulses);
+			const CollisionData& collision_data, const uint32_t currentManifold, const ContactPointData& data,
+			const float deltaTime,
+			const float totalInverseMass, std::vector<float>& accumulatedImpulses);
 		static void SolveFrictionImpulse(Objects::PhysicsObject* first, Objects::PhysicsObject* second,
-			CollisionData collision_data, uint32_t currentManifold,
-			float totalInverseMass, std::vector<float>& accumulatedImpulses, std::vector<float>& accumulatedFrictions);
+			const CollisionData& collision_data, const uint32_t currentManifold, const ContactPointData& data,
+			const float totalInverseMass, std::vector<float>& accumulatedImpulses, std::vector<float>& accumulatedFrictions);
 	};
 
 }

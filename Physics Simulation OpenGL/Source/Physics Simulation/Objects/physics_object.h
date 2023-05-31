@@ -15,50 +15,48 @@
 
 namespace Objects {
 
-	static uint32_t id_counter = 0;
+	static uint32_t id_counter{ 0 };
 
 	class PhysicsObject : public BasicObject {
 	public:
-		PhysicsObject(const glm::vec3& position, const glm::vec3& size, bool isKinematic, float mass, glm::vec3 start_linear_velocity, std::string_view model_name);
+		PhysicsObject(const glm::vec3& position, const glm::vec3& size, bool isKinematic, const float mass, const glm::vec3& start_linear_velocity, std::string_view model_name);
 
-		void UpdateMatrix();
-		void UpdateAABB();
 		void Draw(Render::Renderer* render);
 
-		const glm::vec3& GetLinearVelocity() const;
-		const glm::vec3& GetAngularVelocity() const;
+		void UpdateMatrix();
 
 		void Integrate(float deltaTime);
-		void Accelerate(glm::vec3 acceleration);
+		void Accelerate(const glm::vec3& acceleration, float deltaTime);
+
 		void AppyLinearImpulse(const glm::vec3& impulse);
 		void AppyAngularImpulse(const glm::vec3& impulse);
 
-		const std::vector<glm::vec4>& GetVertices() const;
-		const std::vector<glm::vec3>& GetNormals() const;
+		void UpdateAABB();
 
 		void UpdateWorldPoints();
 		void UpdateWorldNormals();
-
-		const std::vector<glm::vec3>& GetWorldPoints();
-		const std::vector<glm::vec3>& GetWorldNormals();
-
 		void UpdateFaces();
-		const std::vector<Utilities::Model::Face>& GetWorldFaces();
 		bool NotUpdatedFaces();
 		void ClearFaces();
 
-		const Utilities::AABB GetAABB() const;
-		const glm::mat4& GetMatrix() const;
+		const std::vector<glm::vec3>& GetWorldPoints();
+		const std::vector<glm::vec3>& GetWorldNormals();
+		const std::vector<Utilities::Model::Face>& GetWorldFaces();
+		const Utilities::AABB& GetAABB() const;
 		const float GetMass() const;
-		const glm::mat3& GetTensor();
-		const glm::mat3 GetInverseWorldTensor();
-		const glm::vec3& GetLastPos() const;
 		const bool isKinematic() const;
+		const glm::vec3& GetLinearVelocity() const;
+		const glm::vec3& GetAngularVelocity() const;
+		const glm::mat3 GetInverseWorldTensor();
 		const glm::vec3 GetCenter() const;
 		std::string_view GetModelName() const;
 		const glm::mat4 GetRotate();
 		const uint32_t GetID() const;
+		const std::vector<glm::vec4>& GetVertices() const;
+		const std::vector<glm::vec3>& GetNormals() const;
+		const glm::mat4& GetMatrix() const;
 	private:
+		uint32_t m_id;
 		bool m_isKinematic;
 		float m_mass;
 
@@ -71,13 +69,10 @@ namespace Objects {
 		glm::mat4 m_model_matrix;
 
 		Utilities::AABB m_aabb;
-		uint32_t m_id;
 
 		std::vector<glm::vec3> m_world_points;
 		std::vector<glm::vec3> m_world_normals;
 		std::vector<Utilities::Model::Face> m_world_faces;
-
-		glm::vec3 m_lastPos;
 	};
 
 }

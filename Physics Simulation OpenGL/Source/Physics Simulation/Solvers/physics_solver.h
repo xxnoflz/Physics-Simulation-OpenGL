@@ -10,8 +10,8 @@
 
 namespace Solvers {
 
-	inline glm::vec3 gravityConstant = glm::vec3(0.0f, -9.8f, 0.0f);
-	constexpr uint32_t ITERATION_COUNT = 4;
+	inline glm::vec3 gravityConstant { glm::vec3(0.0f, -9.8f, 0.0f) };
+	constexpr uint32_t ITERATION_COUNT { 4 };
 
 	class PhysicsSolver {
 		struct CollisionResponseData {
@@ -23,8 +23,11 @@ namespace Solvers {
 		static void Update(std::vector<std::unique_ptr<Objects::PhysicsObject>>& objects, Utilities::AABB_Tree& tree, float deltaTime);
 	private:
 		static void UpdateObjects(std::vector<std::unique_ptr<Objects::PhysicsObject>>& objects, float deltaTime);
+		static void IntegrateObjects(std::vector<std::unique_ptr<Objects::PhysicsObject>>& objects, float deltaTime);
 
 		static void SolveCollisions(std::vector<std::unique_ptr<Objects::PhysicsObject>>& objects, Utilities::AABB_Tree& tree, float deltaTime);
+		static std::vector<CollisionResponseData> FindCollisions(std::vector<std::unique_ptr<Objects::PhysicsObject>>& objects, Utilities::AABB_Tree& tree);
+		static void ResolveCollisions(std::vector<CollisionResponseData>& currentCollisions, const float deltaTime);
 	};
 
 }
