@@ -15,6 +15,8 @@ void Objects::CameraObject::MouseInput(float xPos, float yPos) {
 	m_camera_rotation.pitch += deltaY * 0.1;
 	m_camera_rotation.yaw += deltaX * 0.1;
 
+	m_camera_rotation.pitch = glm::clamp(m_camera_rotation.pitch, -89.9f, 89.9f);
+
 	UpdateRotation();
 }
 
@@ -24,6 +26,10 @@ const glm::mat4& Objects::CameraObject::GetMatrix() const {
 
 const glm::vec3& Objects::CameraObject::GetDirection() const {
 	return m_direction;
+}
+
+const Objects::EulerAngles& Objects::CameraObject::GetAngles() const {
+	return m_camera_rotation;
 }
 
 void Objects::CameraObject::UpdateRotation() {

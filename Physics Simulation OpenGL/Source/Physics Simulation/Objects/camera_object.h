@@ -26,6 +26,8 @@ namespace Objects {
 
 		const glm::mat4& GetMatrix() const;
 		const glm::vec3& GetDirection() const;
+		const EulerAngles& GetAngles() const;
+
 		void UpdateMatrix();
 	private:
 		EulerAngles m_camera_rotation;
