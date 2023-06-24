@@ -1,8 +1,10 @@
 #version 330 core
 out vec4 PixelColor;
 
-uniform vec3 objectColor;
+in vec2 TexCoord;
+
+uniform sampler2D objectTexture;
 
 void main(){
-	PixelColor = vec4(objectColor, 1.0f);
+	PixelColor = texture(objectTexture, TexCoord);
 }

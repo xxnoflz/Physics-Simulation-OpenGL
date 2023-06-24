@@ -151,10 +151,13 @@
     <ClCompile Include="Source\Physics Simulation\Solvers\physics_solver.cpp" />
     <ClCompile Include="Source\Physics Simulation\Utilities\aabb.cpp" />
     <ClCompile Include="Source\Physics Simulation\Utilities\aabb_tree.cpp" />
+    <ClCompile Include="Source\Physics Simulation\Utilities\manifold.cpp" />
     <ClCompile Include="Source\Physics Simulation\Utilities\model.cpp" />
     <ClCompile Include="Source\Physics Simulation\Utilities\resource_manager.cpp" />
     <ClCompile Include="Source\Physics Simulation\Utilities\shader.cpp" />
+    <ClCompile Include="Source\Physics Simulation\Utilities\texture.cpp" />
     <ClCompile Include="Source\Physics Simulation\Vendor\glad.c" />
+    <ClCompile Include="Source\Physics Simulation\Vendor\stb_image.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Physics Simulation\Model Parser\ModelParser.h" />
@@ -168,9 +171,12 @@
     <ClInclude Include="Source\Physics Simulation\Solvers\physics_solver.h" />
     <ClInclude Include="Source\Physics Simulation\Utilities\aabb.h" />
     <ClInclude Include="Source\Physics Simulation\Utilities\aabb_tree.h" />
+    <ClInclude Include="Source\Physics Simulation\Utilities\manifold.h" />
     <ClInclude Include="Source\Physics Simulation\Utilities\model.h" />
     <ClInclude Include="Source\Physics Simulation\Utilities\resource_manager.h" />
     <ClInclude Include="Source\Physics Simulation\Utilities\shader.h" />
+    <ClInclude Include="Source\Physics Simulation\Utilities\texture.h" />
+    <ClInclude Include="Source\Physics Simulation\Vendor\stb_image.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Source\Physics Simulation\Shaders\basic_fragment.glsl" />

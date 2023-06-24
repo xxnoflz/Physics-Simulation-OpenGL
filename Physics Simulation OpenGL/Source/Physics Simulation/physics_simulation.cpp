@@ -28,14 +28,22 @@ void Simulation::PhysicsSimulation::KeyboardInput() {
 	if (glfwGetKey(m_window, GLFW_KEY_E) == GLFW_PRESS && !m_hasSpawned) {
 		m_objects.push_back(std::make_unique<Objects::PhysicsObject>(m_spectator.GetPosition() + (m_spectator.GetDirection() * 3.0f),
 			glm::vec3(1.0f), true, 20.0f, m_spectator.GetDirection() * 7.5f,
-			"cube_model"));
+			"cube_model", "kinematic_texture"));
 		m_hasSpawned = true;
 		m_tree.InsertLeaf(m_objects.back().get());
+
+		//for(int it{}; it < 10; ++it){
+		//	m_objects.push_back(std::make_unique<Objects::PhysicsObject>(glm::vec3(5.0f, 0.5f + (it * 1.0f), 5.0f),
+		//	glm::vec3(1.0f), true, 1.0f, glm::vec3(0.0f),
+		//	"cube_model", "kinematic_texture"));
+		//	m_hasSpawned = true;
+		//	m_tree.InsertLeaf(m_objects.back().get());
+		//}
 	}
 	else if (glfwGetKey(m_window, GLFW_KEY_Q) == GLFW_PRESS && !m_hasSpawned) {
 		m_objects.push_back(std::make_unique<Objects::PhysicsObject>(m_spectator.GetPosition() + (m_spectator.GetDirection() * 3.0f),
-			glm::vec3(10.0f, 0.5f, 10.0f), false, 1000.0f, glm::vec3(0.0f),
-			"cube_model"));
+			glm::vec3(10.0f, 0.5f, 10.0f), false, std::numeric_limits<float>::infinity(), glm::vec3(0.0f),
+			"cube_model", "static_texture"));
 		m_hasSpawned = true;
 		m_tree.InsertLeaf(m_objects.back().get());
 	}
@@ -56,10 +64,13 @@ void Simulation::PhysicsSimulation::Init() {
 	Utilities::ResourceManager::UseShader("basic_shader");
 	m_render.BindShader(Utilities::ResourceManager::GetCurrentShader(), "Matrices");
 
+	Utilities::ResourceManager::LoadTexture("Source/Physics Simulation/Textures/kinematic.jpg", "kinematic_texture");
+	Utilities::ResourceManager::LoadTexture("Source/Physics Simulation/Textures/static.jpg", "static_texture");
+
 	glm::mat4 projection{ glm::perspective(fov_value, (float)m_window_width / m_window_height, 0.1f, 100.0f) };
 	m_render.UpdateBuffer(projection, Render::Renderer::Offsets::Projection);
 
-	Utilities::ResourceManager::LoadModel("Source/Physics Simulation/Models/cube.obj", "cube_model", "basic_shader");
+	Utilities::ResourceManager::LoadModel("Source/Physics Simulation/Models/cube_render.obj", "Source/Physics Simulation/Models/cube_collision.obj", "cube_model", "basic_shader");
 }
 
 void Simulation::PhysicsSimulation::InitOpenGL() {
@@ -91,7 +102,7 @@ void Simulation::PhysicsSimulation::InitOpenGL() {
 void Simulation::PhysicsSimulation::Update() {
 	UpdateTime();
 	KeyboardInput();
-	Solvers::PhysicsSolver::Update(m_objects, m_tree, 0.016f);
+	Solvers::PhysicsSolver::Update(m_objects, m_tree, m_time.deltaTime);
 }
 
 void Simulation::PhysicsSimulation::UpdateTime() {

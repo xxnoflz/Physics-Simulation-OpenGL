@@ -10,11 +10,13 @@
 #include "../Utilities/model.h"
 #include "../Objects/physics_object.h"
 #include "../Utilities/aabb.h"
+#include "../Utilities/manifold.h"
 
 namespace Solvers {
 
 	constexpr float BIAS{ 0.1f };
-	constexpr float SLOP{ 0.0005f };
+	constexpr float SLOP{ 0.001f };
+	constexpr float MAX_LINEAR_CORRECTION{ 0.2f };
 
 	class CollisionSolver {
 		struct Projection {
@@ -23,50 +25,33 @@ namespace Solvers {
 			glm::vec3 maxPoint;
 			glm::vec3 minPoint;
 		};
-		struct ContactPointData {
-			glm::vec3 relativeFirst;
-			glm::vec3 relativeSecond;
-
-			glm::vec3 angVelocityFirst;
-			glm::vec3 angVelocitySecond;
-
-			glm::vec3 fullVelocityFirst;
-			glm::vec3 fullVelocitySecond;
-			glm::vec3 contactVelocity;
-		};
 	public:
-		struct Manifold {
-			std::vector<glm::vec3> vertices;
-			Objects::PhysicsObject* firstObject;
-			Objects::PhysicsObject* secondObject;
-		};
 		struct CollisionData {
 			float distance;
 			glm::vec3 normal;
-			Manifold manifold;
+			Utilities::Manifold manifold;
 		};
 
 		static bool CheckCollisionAABB(const Utilities::AABB& first, const Utilities::AABB& second);
 		static std::tuple<bool, CollisionData> CheckCollision(Objects::PhysicsObject* first, Objects::PhysicsObject* second);
-		static void ResolveCollision(CollisionData collision_data, std::vector<float>& accumulatedImpulses, std::vector<float>& accumulatedFrictions, float deltaTime);
+		static void ResolveCollision(CollisionData& collision_data);
+		static void ResolvePenetration(CollisionData& collision_data);
 	private:
 		static Projection GetProjection(const glm::vec3& axis, const std::vector<glm::vec3>& objectPoints);
 
-		static std::vector<glm::vec3> GenerateManifold(Objects::PhysicsObject* first, Objects::PhysicsObject* second, const glm::vec3& collisionNormal);
+		static Utilities::Manifold GenerateManifold(Objects::PhysicsObject* first, Objects::PhysicsObject* second, const glm::vec3& collisionNormal);
 		static glm::vec3 GetFurthestPoint(const std::vector<Utilities::Model::Face>& objectFaces, const glm::vec3& normal);
-		static Utilities::Model::Face GetSignificantFace(const std::vector<Utilities::Model::Face>& objectFaces, const glm::vec3& requiredVertex, const glm::vec3& normal);
-		static Utilities::Model::Face ClipFace(Utilities::Model::Face* referenceFace, Utilities::Model::Face* incidentFace,
-			const std::vector<Utilities::Model::Face>& referenceFaces);
+		static uint32_t GetSignificantFace(const std::vector<Utilities::Model::Face>& objectFaces, const glm::vec3& requiredVertex, const glm::vec3& normal);
+		static std::vector<Utilities::Manifold::Point> ClipFace(const Utilities::Model::Face* referenceFace, const Utilities::Model::Face* incidentFace,
+			const std::vector<Utilities::Model::Face>& referenceFaces, bool flip);
 		static glm::vec3 ClipVector(const glm::vec3& subjectVector, const glm::vec3& subjectOrigin, const glm::vec3& clipVertex, const glm::vec3& clipNormal);
 
-		static const ContactPointData GetContactPointData(const CollisionData& collision_data, uint32_t currentManifold);
-		static void SolveNormalImpulse(Objects::PhysicsObject* first, Objects::PhysicsObject* second,
-			const CollisionData& collision_data, const uint32_t currentManifold, const ContactPointData& data,
-			const float deltaTime,
-			const float totalInverseMass, std::vector<float>& accumulatedImpulses);
-		static void SolveFrictionImpulse(Objects::PhysicsObject* first, Objects::PhysicsObject* second,
-			const CollisionData& collision_data, const uint32_t currentManifold, const ContactPointData& data,
-			const float totalInverseMass, std::vector<float>& accumulatedImpulses, std::vector<float>& accumulatedFrictions);
+		static void SolveNormalImpulse(Objects::PhysicsObject* first_object, Objects::PhysicsObject* second_object,
+			CollisionData& collision_data, const uint32_t current_point, const float total_inverse_mass);
+		static void SolveFrictionImpulse(Objects::PhysicsObject* first_object, Objects::PhysicsObject* second_object,
+			CollisionData& collision_data, const uint32_t current_point, const float total_inverse_mass);
+		static void SolvePenetrationImpulse(Objects::PhysicsObject* first_object, Objects::PhysicsObject* second_object,
+			CollisionData& collision_data, const uint32_t current_point, const float total_inverse_mass);
 	};
 
 }

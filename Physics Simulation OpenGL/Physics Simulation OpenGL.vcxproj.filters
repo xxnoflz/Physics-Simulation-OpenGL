@@ -87,6 +87,15 @@
     <ClCompile Include="Source\Physics Simulation\Utilities\aabb_tree.cpp">
       <Filter>Source Files\Physics Simulation\Utilities</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Physics Simulation\Utilities\texture.cpp">
+      <Filter>Source Files\Physics Simulation\Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Physics Simulation\Vendor\stb_image.cpp">
+      <Filter>Source Files\Vendor</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Physics Simulation\Utilities\manifold.cpp">
+      <Filter>Source Files\Physics Simulation\Utilities</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Physics Simulation\physics_simulation.h">
@@ -129,6 +138,15 @@
       <Filter>Source Files\Physics Simulation\Utilities</Filter>
     </ClInclude>
     <ClInclude Include="Source\Physics Simulation\Utilities\aabb_tree.h">
+      <Filter>Source Files\Physics Simulation\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Physics Simulation\Utilities\texture.h">
+      <Filter>Source Files\Physics Simulation\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Physics Simulation\Vendor\stb_image.h">
+      <Filter>Source Files\Vendor</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Physics Simulation\Utilities\manifold.h">
       <Filter>Source Files\Physics Simulation\Utilities</Filter>
     </ClInclude>
   </ItemGroup>

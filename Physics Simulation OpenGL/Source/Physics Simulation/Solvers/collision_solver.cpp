@@ -15,176 +15,250 @@ std::tuple<bool, Solvers::CollisionSolver::CollisionData> Solvers::CollisionSolv
 	const std::vector<glm::vec3> firstNormals{ first->GetWorldNormals()  };
 	const std::vector<glm::vec3> secondNormals{ second->GetWorldNormals()  };
 
+	std::vector<glm::vec3> normal_cross_products{};
+	for(const auto& first_normal : firstNormals)
+		for(const auto& second_normal : secondNormals) {
+			if(glm::cross(first_normal, second_normal) == glm::vec3(0.0f))
+				continue;
+			normal_cross_products.push_back(glm::normalize(glm::cross(first_normal, second_normal)));
+		}
+
 	std::vector<glm::vec3> axes{};
 	axes.insert(axes.end(), firstNormals.begin(), firstNormals.end());
 	axes.insert(axes.end(), secondNormals.begin(), secondNormals.end());
+	axes.insert(axes.end(), normal_cross_products.begin(), normal_cross_products.end());
 
-	CollisionData data{ std::numeric_limits<float>::max() };
+	CollisionData data{ .distance = std::numeric_limits<float>::max() };
 
-	for (const auto& axis : axes) {
+	for(const auto& axis : axes) {
 		Projection firstProjection{ GetProjection(axis, firstPoints) };
 		Projection secondProjection{ GetProjection(axis, secondPoints) };
 
-		if (firstProjection.maxProjection < secondProjection.minProjection ||
+		if(firstProjection.maxProjection < secondProjection.minProjection ||
 			secondProjection.maxProjection < firstProjection.minProjection)
 			return std::make_tuple(false, CollisionData{});
 
 		float overlap_test{ std::min(firstProjection.maxProjection, secondProjection.maxProjection) - std::max(firstProjection.minProjection, secondProjection.minProjection) };
-		if (data.distance > overlap_test) {
+		if(data.distance > overlap_test) {
 			data.distance = overlap_test;
-			if (firstProjection.minProjection <= secondProjection.minProjection && firstProjection.maxProjection >= secondProjection.minProjection)
+			if(firstProjection.minProjection <= secondProjection.minProjection && firstProjection.maxProjection >= secondProjection.minProjection)
 				data.normal = axis;
-			else if (secondProjection.minProjection <= firstProjection.minProjection && secondProjection.maxProjection >= firstProjection.minProjection)
+			else if(secondProjection.minProjection <= firstProjection.minProjection && secondProjection.maxProjection >= firstProjection.minProjection)
 				data.normal = -axis;
 		}
 	}
-
-	data.manifold.vertices = GenerateManifold(first, second, data.normal);
-	data.manifold.firstObject = first;
-	data.manifold.secondObject = second;
+	data.manifold = GenerateManifold(first, second, data.normal);
 
 	return std::make_tuple(true, data);
 }
 
 Solvers::CollisionSolver::Projection Solvers::CollisionSolver::GetProjection(const glm::vec3& axis, const std::vector<glm::vec3>& objectPoints) {
-	Projection projection{};
-	projection.minProjection = std::numeric_limits<float>::max();
-	projection.maxProjection = -std::numeric_limits<float>::max();
-	for (const auto& point : objectPoints) {
+	Projection projection{ .maxProjection = -std::numeric_limits<float>::max(), .minProjection = std::numeric_limits<float>::max() };
+
+	for(const auto& point : objectPoints) {
 		float currentProjection{ glm::dot(point, axis) };
-		if (projection.minProjection > currentProjection) {
+		if(projection.minProjection > currentProjection) {
 			projection.minProjection = currentProjection;
 			projection.minPoint = point;
 		}
-		if (projection.maxProjection < currentProjection) {
+		if(projection.maxProjection < currentProjection) {
 			projection.maxProjection = currentProjection;
 			projection.maxPoint = point;
 		}
 	}
+
 	return projection;
 }
 
 
 //Contact Manifold
-std::vector<glm::vec3> Solvers::CollisionSolver::GenerateManifold(Objects::PhysicsObject* first, Objects::PhysicsObject* second, const glm::vec3& collisionNormal) {
-	std::vector<Utilities::Model::Face> firstFaces{ first->GetWorldFaces() };
-	std::vector<Utilities::Model::Face> secondFaces{ second->GetWorldFaces() };
+Utilities::Manifold Solvers::CollisionSolver::GenerateManifold(Objects::PhysicsObject* first, Objects::PhysicsObject* second, const glm::vec3& collisionNormal) {
+	const std::vector<Utilities::Model::Face> firstFaces{ first->GetWorldFaces() };
+	const std::vector<Utilities::Model::Face> secondFaces{ second->GetWorldFaces() };
 
 	const glm::vec3 furthestFirst{ GetFurthestPoint(firstFaces, collisionNormal) };
 	const glm::vec3 furthestSecond{ GetFurthestPoint(secondFaces, -collisionNormal) };
 
-	Utilities::Model::Face bestFaceFirst{ GetSignificantFace(firstFaces, furthestFirst, collisionNormal) };
-	Utilities::Model::Face bestFaceSecond{ GetSignificantFace(secondFaces, furthestSecond, -collisionNormal) };
+	const uint32_t best_face_first_iterator{ GetSignificantFace(firstFaces, furthestFirst, collisionNormal) };
+	const uint32_t best_face_second_iterator{ GetSignificantFace(secondFaces, furthestSecond, -collisionNormal) };
 
-	glm::vec3 firstCross{ glm::cross(bestFaceFirst.normal, collisionNormal) };
-	glm::vec3 secondCross{ glm::cross(bestFaceSecond.normal, collisionNormal) };
+	const Utilities::Model::Face best_face_first{ firstFaces[best_face_first_iterator] };
+	const Utilities::Model::Face best_face_second{ secondFaces[best_face_second_iterator] };
 
-	Utilities::Model::Face ClippedFace{};
-	Utilities::Model::Face* referenceFace{ (glm::length(firstCross) <= glm::length(secondCross)) ? &bestFaceFirst : &bestFaceSecond };
-	std::vector<Utilities::Model::Face>* referenceFaces{ (glm::length(firstCross) <= glm::length(secondCross)) ? &firstFaces : &secondFaces };
-	Utilities::Model::Face* incidentFace{ (glm::length(secondCross) >= glm::length(firstCross)) ? &bestFaceSecond : &bestFaceFirst };
-	ClippedFace = ClipFace(referenceFace, incidentFace, *referenceFaces);
+	const glm::vec3 firstCross{ glm::cross(best_face_first.normal, collisionNormal) };
+	const glm::vec3 secondCross{ glm::cross(best_face_second.normal, collisionNormal) };
 
-	return ClippedFace.vertices;
+	bool flip{ false };
+
+	const Utilities::Model::Face* referenceFace{ (glm::length(firstCross) <= glm::length(secondCross)) ? &best_face_first : &best_face_second };
+	const std::vector<Utilities::Model::Face>* referenceFaces{ (glm::length(firstCross) <= glm::length(secondCross)) ? &firstFaces : &secondFaces };
+	const Utilities::Model::Face* incidentFace{ (glm::length(secondCross) >= glm::length(firstCross)) ? &best_face_second : &best_face_first };
+
+	if(incidentFace == &best_face_first)
+		flip = true;
+
+	std::vector<Utilities::Manifold::Point> clipped_points{ ClipFace(referenceFace, incidentFace, *referenceFaces, flip) };
+	return { Utilities::Manifold::ManifoldID(best_face_first_iterator, best_face_second_iterator), first, second, clipped_points, collisionNormal };
 }
 
 glm::vec3 Solvers::CollisionSolver::GetFurthestPoint(const std::vector<Utilities::Model::Face>& objectFaces, const glm::vec3& normal) {
 	float maxProjection{ -std::numeric_limits<float>::max() };
 	glm::vec3 maxPoint{};
 
-	for (const auto& [face_vertices, face_normal] : objectFaces) {
-		for (const auto& point : face_vertices) {
+	for(const auto& [face_vertices, face_normal, face_edges] : objectFaces) {
+		for(const auto& point : face_vertices) {
 			float projection{ glm::dot(point, normal) };
-			if (projection > maxProjection) {
+			if(projection > maxProjection) {
 				maxProjection = projection;
 				maxPoint = point;
 			}
 		}
 	}
+
 	return maxPoint;
 }
 
-Utilities::Model::Face Solvers::CollisionSolver::GetSignificantFace(const std::vector<Utilities::Model::Face>& objectFaces, const glm::vec3& requiredVertex, const glm::vec3& normal) {
+uint32_t Solvers::CollisionSolver::GetSignificantFace(const std::vector<Utilities::Model::Face>& objectFaces, const glm::vec3& requiredVertex, const glm::vec3& normal) {
 	float minLength{ std::numeric_limits<float>::max() };
-	Utilities::Model::Face bestFace{};
-	for (const auto& face : objectFaces) {
-		if (std::find(face.vertices.begin(), face.vertices.end(), requiredVertex) == face.vertices.end())
+	uint32_t best_face{};
+
+	for(uint32_t face_iterator{}; face_iterator < objectFaces.size(); ++face_iterator) {
+		Utilities::Model::Face current_face{ objectFaces[face_iterator] };
+
+		if(std::find(current_face.vertices.begin(), current_face.vertices.end(), requiredVertex) == current_face.vertices.end())
 			continue;
 
-		const glm::vec3 crossProduct{ glm::cross(face.normal, normal) };
-		if (crossProduct == glm::vec3(0.0f))
-			return face;
+		const glm::vec3 crossProduct{ glm::cross(current_face.normal, normal) };
+		if(crossProduct == glm::vec3(0.0f))
+			return face_iterator;
 
 		float length{ glm::length(crossProduct) };
-		if (minLength > length) {
+		if(minLength > length) {
 			minLength = length;
-			bestFace = face;
+			best_face = face_iterator;
 		}
 	}
-	return bestFace;
+
+	return best_face;
 }
 
-Utilities::Model::Face Solvers::CollisionSolver::ClipFace(Utilities::Model::Face* referenceFace, Utilities::Model::Face* incidentFace,
-	const std::vector<Utilities::Model::Face>& referenceFaces)
+std::vector<Utilities::Manifold::Point> Solvers::CollisionSolver::ClipFace(const Utilities::Model::Face* referenceFace, const Utilities::Model::Face* incidentFace,
+	const std::vector<Utilities::Model::Face>& referenceFaces, bool flip) 
 {
-	Utilities::Model::Face result{ *incidentFace };
+	std::vector<Utilities::Manifold::Point> clipped_points{};
+	for(int edge_iterator{}; edge_iterator < incidentFace->edges.size(); ++edge_iterator) {
+		glm::vec3 point_position{ incidentFace->edges[edge_iterator].first_point };
+		Utilities::Manifold::Feature point_feature{ edge_iterator, -1 };
+		Utilities::Manifold::Point point{ point_position, point_position, point_feature };
+		clipped_points.push_back(point);
+	}
 
-	for (const auto& clipFace : referenceFaces) {
-		if (clipFace.normal == referenceFace->normal)
+	uint32_t reference_face_iterator{};
+
+	for(uint32_t clipping_face_iterator{}; clipping_face_iterator < referenceFaces.size(); ++clipping_face_iterator) {
+		Utilities::Model::Face clipFace{ referenceFaces[clipping_face_iterator] };
+
+		if(clipFace.normal == referenceFace->normal) {
+			reference_face_iterator = clipping_face_iterator;
 			continue;
+		}
 
 		const glm::vec3 referenceNormal{ -clipFace.normal };
 		const glm::vec3 referenceVertex{ clipFace.vertices[0] };
 
-		Utilities::Model::Face clipped{};
-		for (uint32_t vertexIterator{}; vertexIterator < result.vertices.size(); ++vertexIterator) {
+		std::vector<Utilities::Manifold::Point> current_clip{};
 
-			const glm::vec3 firstVertex{ result.vertices[vertexIterator] };
-			const glm::vec3 secondVertex{ result.vertices[(vertexIterator + 1) % result.vertices.size()] };
+		for(uint32_t point_iterator{}; point_iterator < clipped_points.size(); ++point_iterator) {
+			const Utilities::Manifold::Point first_point{ clipped_points[point_iterator] };
+			const Utilities::Manifold::Point second_point{ clipped_points[(point_iterator + 1) % clipped_points.size()] };
 
-			const float firstDistance{ glm::dot(referenceNormal, firstVertex - referenceVertex) };
-			const float secondDistance{ glm::dot(referenceNormal, secondVertex - referenceVertex) };
+			const float firstDistance{ glm::dot(referenceNormal, first_point.position_on_second - referenceVertex) };
+			const float secondDistance{ glm::dot(referenceNormal, second_point.position_on_second - referenceVertex) };
 
-			if (firstDistance >= 0.0f && secondDistance >= 0.0f)
-				clipped.vertices.push_back(secondVertex);
-			else if (firstDistance >= 0.0f && secondDistance < 0.0f) {
-				const glm::vec3 edgeVector{ secondVertex - firstVertex };
-				clipped.vertices.push_back(ClipVector(edgeVector, firstVertex, referenceVertex, referenceNormal));
+			if(firstDistance >= 0.0f && secondDistance >= 0.0f)
+				current_clip.push_back(second_point);
+			else if(firstDistance >= 0.0f && secondDistance < 0.0f) {
+				const glm::vec3 edgeVector{ second_point.position_on_second - first_point.position_on_second };
+
+				Utilities::Manifold::Point clipped_second{ second_point };
+				clipped_second.position_on_second = ClipVector(edgeVector, first_point.position_on_second, referenceVertex, referenceNormal);
+				clipped_second.feature.clipping_face = clipping_face_iterator;
+
+				current_clip.push_back(clipped_second);
 			}
-			else if (firstDistance < 0.0f && secondDistance >= 0.0f) {
-				const glm::vec3 edgeVector{ firstVertex - secondVertex };
-				clipped.vertices.push_back(ClipVector(edgeVector, secondVertex, referenceVertex, referenceNormal));
-				clipped.vertices.push_back(secondVertex);
+			else if(firstDistance < 0.0f && secondDistance >= 0.0f) {
+
+				const glm::vec3 edgeVector{ first_point.position_on_second - second_point.position_on_second };
+
+				Utilities::Manifold::Point clipped_first{ second_point };
+				clipped_first.position_on_second = ClipVector(edgeVector, second_point.position_on_second, referenceVertex, referenceNormal);
+				clipped_first.feature.clipping_face = clipping_face_iterator;
+
+				current_clip.push_back(clipped_first);
+				current_clip.push_back(second_point);
 			}
 		}
-		result = clipped;
+		clipped_points = current_clip;
 	}
 
 	const glm::vec3 referenceNormal{ -referenceFace->normal };
 	const glm::vec3 referenceVertex{ referenceFace->vertices[0] };
 
-	Utilities::Model::Face clipped{};
-	for (uint32_t vertexIterator{}; vertexIterator < result.vertices.size(); ++vertexIterator) {
+	std::vector<Utilities::Manifold::Point> current_clip{};
 
-		const glm::vec3 firstVertex{ result.vertices[vertexIterator] };
-		const glm::vec3 secondVertex{ result.vertices[(vertexIterator + 1) % result.vertices.size()] };
+	for(uint32_t point_iterator{}; point_iterator < clipped_points.size(); ++point_iterator) {
+		const Utilities::Manifold::Point first_point{ clipped_points[point_iterator] };
+		const Utilities::Manifold::Point second_point{ clipped_points[(point_iterator + 1) % clipped_points.size()] };
 
-		const float firstDistance{ glm::dot(referenceNormal, firstVertex - referenceVertex) };
-		const float secondDistance{ glm::dot(referenceNormal, secondVertex - referenceVertex) };
+		const float firstDistance{ glm::dot(referenceNormal, first_point.position_on_second - referenceVertex) };
+		const float secondDistance{ glm::dot(referenceNormal, second_point.position_on_second - referenceVertex) };
 
-		if (firstDistance >= 0.0f && secondDistance >= 0.0f)
-			clipped.vertices.push_back(secondVertex);
-		else if (firstDistance >= 0.0f && secondDistance < 0.0f)
-			clipped.vertices.push_back(firstVertex);
-		else if (firstDistance < 0.0f && secondDistance >= 0.0f)
-			clipped.vertices.push_back(secondVertex);
+		if(firstDistance >= 0.0f && secondDistance >= 0.0f) {
+			Utilities::Manifold::Point clipped_second{ second_point };
+			glm::vec3 delta_vector{ clipped_second.position_on_second - referenceVertex };
+			float distance{ glm::dot(delta_vector, referenceNormal) };
+			glm::vec3 projected_vertex{ second_point.position_on_second - (distance * referenceNormal) };
+
+			clipped_second.position_on_first = projected_vertex;
+			clipped_second.penetration_distance = distance;
+			if(flip)
+				std::swap(clipped_second.position_on_first, clipped_second.position_on_second);
+
+			current_clip.push_back(clipped_second);
+		}
+		else if(firstDistance >= 0.0f && secondDistance < 0.0f) {
+			Utilities::Manifold::Point clipped_first{ first_point };
+			glm::vec3 delta_vector{ clipped_first.position_on_second - referenceVertex };
+			float distance{ glm::dot(delta_vector, referenceNormal) };
+			glm::vec3 projected_vertex{ clipped_first.position_on_second - (distance * referenceNormal) };
+
+			clipped_first.position_on_first = projected_vertex;
+			clipped_first.penetration_distance = distance;
+			if(flip)
+				std::swap(clipped_first.position_on_first, clipped_first.position_on_second);
+
+			current_clip.push_back(clipped_first);
+		}
+		else if(firstDistance < 0.0f && secondDistance >= 0.0f) {
+			Utilities::Manifold::Point clipped_second{ second_point };
+			glm::vec3 delta_vector{ clipped_second.position_on_second - referenceVertex };
+			float distance{ glm::dot(delta_vector, referenceNormal) };
+			glm::vec3 projected_vertex{ second_point.position_on_second - (distance * referenceNormal) };
+
+			clipped_second.position_on_first = projected_vertex;
+			clipped_second.penetration_distance = distance;
+			if(flip)
+				std::swap(clipped_second.position_on_first, clipped_second.position_on_second);
+
+			current_clip.push_back(clipped_second);
+		}
 	}
-	result = clipped;
+	clipped_points = current_clip;
 
-	std::unordered_set<glm::vec3> s(result.vertices.begin(), result.vertices.end());	//
-	result.vertices.assign(s.begin(), s.end());											//Only unique elements
+	std::unordered_set<Utilities::Manifold::Point> s(clipped_points.begin(), clipped_points.end());	//
+	clipped_points.assign(s.begin(), s.end());														//only unique elements
 
-	return result;
+	return clipped_points;
 }
 
 glm::vec3 Solvers::CollisionSolver::ClipVector(const glm::vec3& subjectVector, const glm::vec3& subjectOrigin, const glm::vec3& clipVertex, const glm::vec3& clipNormal) {
@@ -196,123 +270,121 @@ glm::vec3 Solvers::CollisionSolver::ClipVector(const glm::vec3& subjectVector, c
 
 
 //Collision Response
-void Solvers::CollisionSolver::ResolveCollision(CollisionData collision_data, 
-	std::vector<float>& accumulatedImpulses, std::vector<float>& accumulatedFrictions, 
-	float deltaTime) 
-{
-	const float totalInverseMass{ (1.0f / collision_data.manifold.firstObject->GetMass()) + (1.0f / collision_data.manifold.secondObject->GetMass()) };
+void Solvers::CollisionSolver::ResolveCollision(CollisionData& collision_data) {
+	Objects::PhysicsObject* first_object{ collision_data.manifold.GetFirstObject() };
+	Objects::PhysicsObject* second_object{ collision_data.manifold.GetSecondObject() };
 
-	for (uint32_t currentManifold{}; currentManifold < collision_data.manifold.vertices.size(); ++currentManifold) {
-		const ContactPointData currentData{ GetContactPointData(collision_data, currentManifold) };
+	const float total_inverse_mass{ (1.0f / first_object->GetMass()) + (1.0f / second_object->GetMass()) };
 
-		SolveNormalImpulse(collision_data.manifold.firstObject, collision_data.manifold.secondObject, 
-			collision_data, currentManifold, currentData,
-			deltaTime, 
-			totalInverseMass, accumulatedImpulses);
-		SolveFrictionImpulse(collision_data.manifold.firstObject, collision_data.manifold.secondObject, 
-			collision_data, currentManifold, currentData,
-			totalInverseMass, accumulatedImpulses, accumulatedFrictions);
+	for(uint32_t current_point{}; current_point < collision_data.manifold.GetPoints().size(); ++current_point) {
+		SolveFrictionImpulse(first_object, second_object, collision_data, current_point, total_inverse_mass);
+		SolveNormalImpulse(first_object, second_object, collision_data, current_point, total_inverse_mass);
 	}
 }
 
-const Solvers::CollisionSolver::ContactPointData Solvers::CollisionSolver::GetContactPointData(const CollisionData& collision_data, uint32_t currentManifold) {
-	ContactPointData data{};
+void Solvers::CollisionSolver::ResolvePenetration(CollisionData& collision_data) {
+	Objects::PhysicsObject* first_object{ collision_data.manifold.GetFirstObject() };
+	Objects::PhysicsObject* second_object{ collision_data.manifold.GetSecondObject() };
 
-	data.relativeFirst = collision_data.manifold.vertices[currentManifold] - collision_data.manifold.firstObject->GetCenter();
-	data.relativeSecond = collision_data.manifold.vertices[currentManifold] - collision_data.manifold.secondObject->GetCenter();
+	const float total_inverse_mass{ (1.0f / first_object->GetMass()) + (1.0f / second_object->GetMass()) };
 
-	data.angVelocityFirst = glm::cross(collision_data.manifold.firstObject->GetAngularVelocity(), data.relativeFirst);
-	data.angVelocitySecond = glm::cross(collision_data.manifold.secondObject->GetAngularVelocity(), data.relativeSecond);
-
-	data.fullVelocityFirst = collision_data.manifold.firstObject->GetLinearVelocity() + data.angVelocityFirst;
-	data.fullVelocitySecond = collision_data.manifold.secondObject->GetLinearVelocity() + data.angVelocitySecond;
-	data.contactVelocity = data.fullVelocitySecond - data.fullVelocityFirst;
-
-	return data;
+	for(uint32_t current_point{}; current_point < collision_data.manifold.GetPoints().size(); ++current_point) 
+		SolvePenetrationImpulse(first_object, second_object, collision_data, current_point, total_inverse_mass);
 }
 
-void Solvers::CollisionSolver::SolveNormalImpulse(Objects::PhysicsObject* first, Objects::PhysicsObject* second,
-	const CollisionData& collision_data, const uint32_t currentManifold, const ContactPointData& data,
-	const float deltaTime,
-	const float totalInverseMass, std::vector<float>& accumulatedImpulses)
+//Normal impulse
+void Solvers::CollisionSolver::SolveNormalImpulse(Objects::PhysicsObject* first_object, Objects::PhysicsObject* second_object,
+	CollisionData& collision_data, const uint32_t current_point, const float total_inverse_mass) 
 {
-	const float impulseForce{ glm::dot(data.contactVelocity, collision_data.normal) };
+	const Utilities::Manifold::ContactPointData contact_data{ collision_data.manifold.GetContactPointData(current_point) };
 
-	const glm::vec3 inertiaFirst{ glm::cross(first->GetInverseWorldTensor() * glm::cross(data.relativeFirst, collision_data.normal), data.relativeFirst) };
-	const glm::vec3 inertiaSecond{ glm::cross(second->GetInverseWorldTensor() * glm::cross(data.relativeSecond, collision_data.normal), data.relativeSecond) };
-	const float angularEffect{ glm::dot(inertiaFirst + inertiaSecond, collision_data.normal) };
+	const float normal_impulse{ glm::dot(contact_data.contact_velocity, collision_data.normal) };
 
-	const float correction{ (BIAS / deltaTime) * std::max(0.0f, collision_data.distance - SLOP) };
-	const float numerator{ -glm::dot(data.contactVelocity, collision_data.normal) + correction };
-	const float impulse{ numerator / (totalInverseMass + angularEffect) };
+	const glm::vec3 inertia_first{ glm::cross(first_object->GetInverseWorldTensor() *
+		glm::cross(contact_data.position_relative_first, collision_data.normal), contact_data.position_relative_first) };
+	const glm::vec3 inertia_second{ glm::cross(second_object->GetInverseWorldTensor() *
+		glm::cross(contact_data.position_relative_second, collision_data.normal), contact_data.position_relative_second) };
+	const float angular_effect{ glm::dot(inertia_first + inertia_second, collision_data.normal) };
 
-	const float temp{ accumulatedImpulses[currentManifold] };
-	accumulatedImpulses[currentManifold] = std::max(accumulatedImpulses[currentManifold] + impulse, 0.0f);
-	const float deltaImpulse{ accumulatedImpulses[currentManifold] - temp };
+	float impulse{ -(1.0f + 0.66f) * normal_impulse / (total_inverse_mass + angular_effect) }; //Restitution
 
-	const glm::vec3 fullImpulse{ collision_data.normal * deltaImpulse };
-	first->AppyLinearImpulse(-fullImpulse);
-	second->AppyLinearImpulse(fullImpulse);
+	const float temp_accumulated{ collision_data.manifold.GetPoints()[current_point].accumulated_impulse };
+	collision_data.manifold.GetPoints()[current_point].accumulated_impulse = std::max(temp_accumulated + impulse, 0.0f);
+	impulse = collision_data.manifold.GetPoints()[current_point].accumulated_impulse - temp_accumulated;
 
-	first->AppyAngularImpulse(glm::cross(data.relativeFirst, -fullImpulse));
-	second->AppyAngularImpulse(glm::cross(data.relativeSecond, fullImpulse));
+	const glm::vec3 result_impulse{ collision_data.normal * impulse };
+
+	first_object->AppyLinearImpulse(-result_impulse);
+	first_object->AppyAngularImpulse(-glm::cross(contact_data.position_relative_first, result_impulse));
+
+	second_object->AppyLinearImpulse(result_impulse);
+	second_object->AppyAngularImpulse(glm::cross(contact_data.position_relative_second, result_impulse));
 }
 
-void Solvers::CollisionSolver::SolveFrictionImpulse(Objects::PhysicsObject* first, Objects::PhysicsObject* second,
-	const CollisionData& collision_data, const uint32_t currentManifold, const ContactPointData& data,
-	const float totalInverseMass, std::vector<float>& accumulatedImpulses, std::vector<float>& accumulatedFrictions)
+//Friction impulse
+void Solvers::CollisionSolver::SolveFrictionImpulse(Objects::PhysicsObject* first_object, Objects::PhysicsObject* second_object,
+	CollisionData& collision_data, const uint32_t current_point, const float total_inverse_mass) 
 {
-	glm::vec3 tangent{};
-	if (glm::dot(data.contactVelocity, collision_data.normal) != 0.0f) {
-		glm::vec3 numerator{ data.contactVelocity - collision_data.normal * glm::dot(data.contactVelocity, collision_data.normal) };
-		float denominator{ glm::length(numerator) };
-		if (denominator != 0.0f)
-			tangent = numerator / denominator;
+	const Utilities::Manifold::ContactPointData contact_data{ collision_data.manifold.GetContactPointData(current_point) };
+
+	const float friction_coefficient{ 0.6f };
+
+	for(uint32_t current_tangent{}; current_tangent < collision_data.manifold.GetPoints()[current_point].tangents.size(); ++current_tangent) {
+		const float tangent_impulse{ glm::dot(contact_data.contact_velocity, collision_data.manifold.GetPoints()[current_point].tangents[current_tangent]) };
+
+		const glm::vec3 inertia_first{ glm::cross(first_object->GetInverseWorldTensor() *
+			glm::cross(contact_data.position_relative_first, collision_data.manifold.GetPoints()[current_point].tangents[current_tangent]),
+			contact_data.position_relative_first) };
+		const glm::vec3 inertia_second{ glm::cross(second_object->GetInverseWorldTensor() *
+			glm::cross(contact_data.position_relative_second, collision_data.manifold.GetPoints()[current_point].tangents[current_tangent]),
+			contact_data.position_relative_second) };
+		const float angular_effect{ glm::dot(inertia_first + inertia_second, collision_data.manifold.GetPoints()[current_point].tangents[current_tangent]) };
+
+		float impulse{ -tangent_impulse / (total_inverse_mass + angular_effect) };
+
+		const float max_impulse{ friction_coefficient * collision_data.manifold.GetPoints()[current_point].accumulated_impulse };
+
+		const float temp_accumulated{ collision_data.manifold.GetPoints()[current_point].accumulated_friction[current_tangent] };
+		collision_data.manifold.GetPoints()[current_point].accumulated_friction[current_tangent] = glm::clamp(temp_accumulated + impulse, -max_impulse, max_impulse);
+		impulse = collision_data.manifold.GetPoints()[current_point].accumulated_friction[current_tangent] - temp_accumulated;
+
+		const glm::vec3 result_impulse{ collision_data.manifold.GetPoints()[current_point].tangents[current_tangent] * impulse };
+
+		first_object->AppyLinearImpulse(-result_impulse);
+		first_object->AppyAngularImpulse(-glm::cross(contact_data.position_relative_first, result_impulse));
+
+		second_object->AppyLinearImpulse(result_impulse);
+		second_object->AppyAngularImpulse(glm::cross(contact_data.position_relative_second, result_impulse));
 	}
-	else
-		tangent = glm::vec3(0.0f);
+}
 
-	float coefficientStatic{ 1.0f };
-	float coefficientDynamic{ 0.8f };
+//Position correction
+void Solvers::CollisionSolver::SolvePenetrationImpulse(Objects::PhysicsObject* first_object, Objects::PhysicsObject* second_object,
+	CollisionData& collision_data, const uint32_t current_point, const float total_inverse_mass) 
+{
+	const glm::vec3 world_first_point{ first_object->GetMatrix() *
+		glm::vec4(collision_data.manifold.GetPoints()[current_point].local_first, 1.0f) };
+	const glm::vec3 world_second_point{ second_object->GetMatrix() *
+		glm::vec4(collision_data.manifold.GetPoints()[current_point].local_second, 1.0f) };
 
-	//TODO: Fix static friction
-	if (glm::dot(data.contactVelocity, tangent) == 0.0f && glm::dot(data.contactVelocity, tangent) <= coefficientStatic * glm::length(accumulatedImpulses[currentManifold])) {
-		const float friction{ -glm::dot(data.contactVelocity, tangent) };
+	const glm::vec3 delta_vector{ world_second_point - world_first_point };
+	const float separation{ glm::dot(collision_data.normal, delta_vector) };
 
-		const float tempFriction{ accumulatedFrictions[currentManifold] };
-		accumulatedFrictions[currentManifold] = glm::clamp(accumulatedFrictions[currentManifold] + friction,
-			-coefficientStatic * accumulatedImpulses[currentManifold],
-			coefficientStatic * accumulatedImpulses[currentManifold]);
-		const float deltaFriction{ accumulatedFrictions[currentManifold] - tempFriction };
-		const glm::vec3 fullFriction{ tangent * deltaFriction };
+	const glm::vec3 position_relative_first{ world_first_point - first_object->GetCenter() };
+	const glm::vec3 position_relative_second{ world_second_point - second_object->GetCenter() };
 
-		first->AppyLinearImpulse(-fullFriction);
-		second->AppyLinearImpulse(fullFriction);
+	const glm::vec3 inertia_first{ glm::cross(first_object->GetInverseWorldTensor() *
+		glm::cross(position_relative_first, collision_data.normal), position_relative_first) };
+	const glm::vec3 inertia_second{ glm::cross(second_object->GetInverseWorldTensor() *
+		glm::cross(position_relative_second, collision_data.normal), position_relative_second) };
+	const float angular_effect{ glm::dot(inertia_first + inertia_second, collision_data.normal) };
 
-		first->AppyAngularImpulse(glm::cross(data.relativeFirst, -fullFriction));
-		second->AppyAngularImpulse(glm::cross(data.relativeSecond, fullFriction));
-	}
-	else {
-		const float frictionNumerator{ -glm::dot(data.contactVelocity, tangent) };
+	const float steering_force{ glm::clamp(BIAS * (separation + SLOP), -MAX_LINEAR_CORRECTION, 0.0f) };
+	const float impulse{ -steering_force / (angular_effect + total_inverse_mass)};
 
-		const glm::vec3 frictionInertiaFirst{ glm::cross(first->GetInverseWorldTensor() * glm::cross(data.relativeFirst, tangent), data.relativeFirst) };
-		const glm::vec3 frictionInertiaSecond{ glm::cross(second->GetInverseWorldTensor() * glm::cross(data.relativeSecond, tangent), data.relativeSecond) };
-		const float frictionAngularEffect{ glm::dot(frictionInertiaFirst + frictionInertiaSecond, tangent) };
-		const float frictionDenominator{ frictionAngularEffect + totalInverseMass };
+	const glm::vec3 result_impulse{ collision_data.normal * impulse };
 
-		const float friction{ frictionNumerator / frictionDenominator };
+	first_object->IntegrateImpulse(-result_impulse, -glm::cross(position_relative_first, result_impulse));
 
-		const float tempFriction{ accumulatedFrictions[currentManifold] };
-		accumulatedFrictions[currentManifold] = glm::clamp(accumulatedFrictions[currentManifold] + friction,
-			-coefficientDynamic * accumulatedImpulses[currentManifold],
-			coefficientDynamic * accumulatedImpulses[currentManifold]);
-		const float deltaFriction{ accumulatedFrictions[currentManifold] - tempFriction };
-		const glm::vec3 fullFriction{ tangent * deltaFriction };
-
-		first->AppyLinearImpulse(-fullFriction);
-		second->AppyLinearImpulse(fullFriction);
-
-		first->AppyAngularImpulse(glm::cross(data.relativeFirst, -fullFriction));
-		second->AppyAngularImpulse(glm::cross(data.relativeSecond, fullFriction));
-	}
+	second_object->IntegrateImpulse(result_impulse, glm::cross(position_relative_second, result_impulse));
 }

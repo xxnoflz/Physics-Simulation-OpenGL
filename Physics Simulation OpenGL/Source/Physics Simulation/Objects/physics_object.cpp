@@ -1,9 +1,10 @@
 #include "physics_object.h"
 
 Objects::PhysicsObject::PhysicsObject(const glm::vec3& position, const glm::vec3& size, 
-	bool isKinematic, const float mass, const glm::vec3& start_linear_velocity, std::string_view model_name) 
-	: BasicObject(position, size), m_isKinematic(isKinematic), m_mass(mass), m_inertia_tensor(glm::boxInertia3(m_mass, size)), m_linear_velocity(start_linear_velocity),
-	m_model_name(model_name), m_aabb(), m_id(id_counter++), m_world_points(), m_world_normals()
+	bool isKinematic, const float mass, const glm::vec3& start_linear_velocity, std::string_view model_name,
+	std::string_view texture_name)
+	: BasicObject(position, size), m_isKinematic(isKinematic), m_mass(mass), m_inertia_tensor(glm::boxInertia3(mass, size)), m_linear_velocity(start_linear_velocity),
+	m_model_name(model_name), m_texture_name(texture_name), m_aabb(), m_id(id_counter++), m_world_points(), m_world_normals()
 {
 	UpdateMatrix();
 
@@ -17,19 +18,21 @@ void Objects::PhysicsObject::Draw(Render::Renderer* render) {
 	UpdateMatrix();
 	std::string shaderName{ Utilities::ResourceManager::GetModel(m_model_name).GetShader() };
 	Utilities::Model usedModel{ Utilities::ResourceManager::GetModel(m_model_name) };
+
+	Utilities::ResourceManager::UseTexture(m_texture_name);
 	Utilities::ResourceManager::UseShader(shaderName);
 	Utilities::ResourceManager::GetShader(shaderName).SetMat4("model", m_model_matrix);
-	if(m_isKinematic)
-		Utilities::ResourceManager::GetShader(shaderName).SetVec3("objectColor", glm::vec3(0.4f, 0.4f, 0.4f));
-	else
-		Utilities::ResourceManager::GetShader(shaderName).SetVec3("objectColor", glm::vec3(0.8f, 0.8f, 0.8f));
 	usedModel.Draw(render);
 }
 
 void Objects::PhysicsObject::UpdateMatrix() {
 	m_model_matrix = glm::mat4(1.0f);
 	m_model_matrix = glm::translate(m_model_matrix, GetPosition());
+
+	m_model_matrix = glm::translate(m_model_matrix, 0.5f * GetSize());
 	m_model_matrix *= glm::toMat4(GetRotation());
+	m_model_matrix = glm::translate(m_model_matrix, -0.5f * GetSize());
+
 	m_model_matrix = glm::scale(m_model_matrix, GetSize());
 }
 
@@ -43,19 +46,25 @@ void Objects::PhysicsObject::Integrate(float deltaTime) {
 	UpdateMatrix();
 }
 
+void Objects::PhysicsObject::IntegrateImpulse(const glm::vec3& linear_impulse, const glm::vec3& angular_impulse) {
+	//Semi-implicit Euler integration
+	GetPosition() += (1.0f / m_mass) * linear_impulse;
+
+	GetRotation() += glm::quat(0.0f, (GetInverseWorldTensor() * angular_impulse) * 0.5f) * GetRotation();
+	GetRotation() = glm::normalize(GetRotation());
+
+	UpdateMatrix();
+}
+
 void Objects::PhysicsObject::Accelerate(const glm::vec3& acceleration, float deltaTime) {
 	m_linear_velocity += acceleration * deltaTime;
 }
 
 void Objects::PhysicsObject::AppyLinearImpulse(const glm::vec3& impulse) {
-	if (!m_isKinematic)
-		return;
 	m_linear_velocity += impulse * (1.0f / m_mass);
 }
 
 void Objects::PhysicsObject::AppyAngularImpulse(const glm::vec3& impulse) {
-	if (!m_isKinematic)
-		return;
 	m_angular_velocity += GetInverseWorldTensor() * impulse;
 }
 
@@ -82,12 +91,16 @@ void Objects::PhysicsObject::UpdateWorldNormals() {
 void Objects::PhysicsObject::UpdateFaces() {
 	const std::vector<Utilities::Model::Face> objectFaces{ Utilities::ResourceManager::GetModel(m_model_name).GetFaces() };
 
-	for (const auto& [vertices, normal] : objectFaces) {
+	for (const auto& [vertices, normal, edges] : objectFaces) {
 		Utilities::Model::Face face{};
 		face.normal = glm::normalize(GetRotate() * glm::vec4(normal, 0.0f));
 		for (const auto& vertex : vertices)
 			face.vertices.push_back(m_model_matrix * glm::vec4(vertex, 1.0f));
-
+		for(const auto& edge : edges) {
+			glm::vec3 first_transformed{ m_model_matrix * glm::vec4(edge.first_point, 1.0f) };
+			glm::vec3 second_transformed{ m_model_matrix * glm::vec4(edge.second_point, 1.0f) };
+			face.edges.push_back( {first_transformed, second_transformed} );
+		}
 		m_world_faces.push_back(face);
 	}
 }
@@ -109,7 +122,7 @@ const std::vector<glm::vec3>& Objects::PhysicsObject::GetWorldNormals() {
 }
 
 const std::vector<Utilities::Model::Face>& Objects::PhysicsObject::GetWorldFaces() {
-	if (m_world_faces.empty())
+	if (m_world_faces.empty()) 
 		UpdateFaces();
 
 	return m_world_faces;
@@ -136,6 +149,8 @@ const glm::vec3& Objects::PhysicsObject::GetAngularVelocity() const {
 }
 
 const glm::mat3 Objects::PhysicsObject::GetInverseWorldTensor() {
+	if(m_mass == std::numeric_limits<float>::infinity())
+		return glm::mat3(0.0f);
 	glm::mat3 rotation_matrix{ GetRotate() };
 	glm::mat3 rotation_transpose{ glm::transpose(rotation_matrix) };
 	return (rotation_matrix * glm::inverse(m_inertia_tensor) * rotation_transpose);

@@ -19,13 +19,15 @@ namespace Objects {
 
 	class PhysicsObject : public BasicObject {
 	public:
-		PhysicsObject(const glm::vec3& position, const glm::vec3& size, bool isKinematic, const float mass, const glm::vec3& start_linear_velocity, std::string_view model_name);
+		PhysicsObject(const glm::vec3& position, const glm::vec3& size, bool isKinematic, const float mass, const glm::vec3& start_linear_velocity, std::string_view model_name,
+			std::string_view texture_name);
 
 		void Draw(Render::Renderer* render);
 
 		void UpdateMatrix();
 
 		void Integrate(float deltaTime);
+		void IntegrateImpulse(const glm::vec3& linear_impulse, const glm::vec3& angular_impulse);
 		void Accelerate(const glm::vec3& acceleration, float deltaTime);
 
 		void AppyLinearImpulse(const glm::vec3& impulse);
@@ -55,17 +57,18 @@ namespace Objects {
 		const std::vector<glm::vec4>& GetVertices() const;
 		const std::vector<glm::vec3>& GetNormals() const;
 		const glm::mat4& GetMatrix() const;
-	private:
-		uint32_t m_id;
-		bool m_isKinematic;
-		float m_mass;
-
 		glm::vec3 m_linear_velocity;
 		glm::vec3 m_angular_velocity;
+		bool m_isKinematic;
+	private:
+		uint32_t m_id;
+		float m_mass;
+
 		glm::vec3 m_acceleration;
 		glm::mat3 m_inertia_tensor;
 
 		std::string m_model_name;
+		std::string m_texture_name;
 		glm::mat4 m_model_matrix;
 
 		Utilities::AABB m_aabb;

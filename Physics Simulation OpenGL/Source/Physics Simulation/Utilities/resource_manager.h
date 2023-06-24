@@ -7,9 +7,11 @@
 #include <vector>
 
 #include "../Model Parser/ModelParser.h"
+#include "../Vendor/stb_image.h"
 
 #include "shader.h"
 #include "model.h"
+#include "texture.h"
 
 namespace Utilities {
 
@@ -21,13 +23,18 @@ namespace Utilities {
 		static Shader& GetCurrentShader();
 		static std::string_view GetCurrentShaderName();
 
-		static void LoadModel(std::string_view modelPath, std::string_view model_name, std::string_view shader_name);
+		static void LoadTexture(std::string_view texture_path, std::string_view texture_name);
+		static void UseTexture(std::string_view texture_name);
+
+		static void LoadModel(std::string_view modelRenderPath, std::string_view modelCollisionPath, std::string_view model_name, std::string_view shader_name);
 		static Model& GetModel(std::string_view model_name);
 	private:
 		static std::map<std::string_view, Shader> m_Shaders;
 		static std::map<std::string_view, Model> m_Models;
+		static std::map<std::string_view, Texture> m_Textures;
 
 		static std::string m_currentShader;
+		static std::string m_currentTexture;
 	};
 
 }
