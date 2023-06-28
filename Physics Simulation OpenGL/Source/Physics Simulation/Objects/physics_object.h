@@ -57,15 +57,16 @@ namespace Objects {
 		const std::vector<glm::vec4>& GetVertices() const;
 		const std::vector<glm::vec3>& GetNormals() const;
 		const glm::mat4& GetMatrix() const;
-		glm::vec3 m_linear_velocity;
-		glm::vec3 m_angular_velocity;
-		bool m_isKinematic;
 	private:
 		uint32_t m_id;
-		float m_mass;
+		bool m_isKinematic;
 
+		glm::vec3 m_linear_velocity;
+		glm::vec3 m_angular_velocity;
 		glm::vec3 m_acceleration;
+
 		glm::mat3 m_inertia_tensor;
+		float m_mass;
 
 		std::string m_model_name;
 		std::string m_texture_name;

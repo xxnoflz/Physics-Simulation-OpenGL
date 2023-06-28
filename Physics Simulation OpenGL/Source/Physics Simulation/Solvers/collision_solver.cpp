@@ -274,6 +274,9 @@ void Solvers::CollisionSolver::ResolveCollision(CollisionData& collision_data) {
 	Objects::PhysicsObject* first_object{ collision_data.manifold.GetFirstObject() };
 	Objects::PhysicsObject* second_object{ collision_data.manifold.GetSecondObject() };
 
+	if(!first_object->isKinematic() && !second_object->isKinematic())
+		return;
+
 	const float total_inverse_mass{ (1.0f / first_object->GetMass()) + (1.0f / second_object->GetMass()) };
 
 	for(uint32_t current_point{}; current_point < collision_data.manifold.GetPoints().size(); ++current_point) {
@@ -285,6 +288,9 @@ void Solvers::CollisionSolver::ResolveCollision(CollisionData& collision_data) {
 void Solvers::CollisionSolver::ResolvePenetration(CollisionData& collision_data) {
 	Objects::PhysicsObject* first_object{ collision_data.manifold.GetFirstObject() };
 	Objects::PhysicsObject* second_object{ collision_data.manifold.GetSecondObject() };
+
+	if(!first_object->isKinematic() && !second_object->isKinematic())
+		return;
 
 	const float total_inverse_mass{ (1.0f / first_object->GetMass()) + (1.0f / second_object->GetMass()) };
 
